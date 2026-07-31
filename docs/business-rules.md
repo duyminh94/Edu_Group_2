@@ -25,6 +25,67 @@ Controller  →  Service  →  DbContext  →  Database
 ở CoreDay05), hoặc `bool` + `out string message`. Thống nhất dùng **`string`**:
 trả `"SUCCESS"` khi thành công, trả câu thông báo tiếng Việt khi lỗi.
 
+### 0.1. Vì sao dự án không tách tầng Repository
+
+Giáo trình Aptech (Session 9, 10) dạy **Onion Architecture** với 4 tầng:
+Domain Entities → **Repository** → Service → UI. Một số bài trước cũng làm theo:
+
+| Bài | Có `Repositories/` |
+|-----|:---:|
+| CoreFirstDay03 | ✅ |
+| CoreDay04, CoreDay05 | ❌ |
+| Pretest, PretestWDA | ✅ |
+
+**Dự án này chọn không tách Repository** — Service gọi thẳng `DbContext`, theo pattern
+CoreDay04/05. Đây là quyết định có chủ đích, không phải thiếu sót.
+
+**Lý do:**
+
+1. **Không có nhu cầu đổi nguồn dữ liệu.** Repository sinh ra để tầng nghiệp vụ không
+   phụ thuộc cách lưu trữ — đổi từ SQL Server sang MongoDB chỉ sửa 1 chỗ. Dự án này
+   gắn với SQL Server, không có kịch bản đổi.
+2. **`DbContext` của EF Core đã là một Repository.** `DbSet<Post>` bản thân nó là
+   Repository pattern, `SaveChanges()` là Unit of Work. Bọc thêm một lớp nữa
+   phần lớn chỉ là gọi lại cùng một hàm.
+3. **12 bảng × 2 file = 24 file repository**, đa số chỉ có `GetAll`, `GetById`, `Add`,
+   `Update`, `Delete` giống hệt nhau. Với nhóm 4 người trong thời gian có hạn, công sức
+   đó nên dồn vào phần nghiệp vụ thật.
+
+**Cái giá phải trả và cách bù:**
+
+| Vấn đề | Cách xử lý |
+|--------|-----------|
+| Service phình to vì ôm cả query lẫn nghiệp vụ | Tách phần query ra **hàm `private`** trong cùng Service |
+| Không còn tầng riêng lo tối ưu truy vấn | Quy tắc **8.3** — mọi truy vấn chỉ đọc phải có `AsNoTracking()` |
+| Khó viết unit test cho nghiệp vụ | Dự án không yêu cầu unit test |
+
+Ví dụ cách giữ Service gọn — tách query xuống hàm private:
+
+```csharp
+public async Task<string> PublishAsync(int postId, int currentUserId)
+{
+    var post = await FindPostAsync(postId);            // truy vấn
+    if (post == null) return "Bài viết không tồn tại";
+    if (post.AuthorId != currentUserId) return "Bạn không có quyền";
+    if (string.IsNullOrWhiteSpace(post.Content)) return "Nội dung không được để trống";
+
+    post.Status = PostStatus.Published;                 // nghiệp vụ
+    post.PublishedAt ??= DateTime.Now;                  // quy tắc 1.3
+    post.UpdatedAt = DateTime.Now;
+    await context.SaveChangesAsync();
+    return "SUCCESS";
+}
+
+// Truy vấn tách riêng để phần nghiệp vụ ở trên đọc liền mạch
+private async Task<Post?> FindPostAsync(int postId)
+    => await context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+```
+
+> **Nếu được hỏi trong buổi bảo vệ:** dự án dùng kiến trúc phân tầng
+> Controller → Service → DbContext. Bỏ tầng Repository vì `DbContext` đã đóng vai trò đó,
+> và dự án không có nhu cầu thay đổi nguồn dữ liệu. Ranh giới các tầng vẫn giữ nghiêm:
+> Controller không query database, Service không trả về View.
+
 ---
 
 ## Luồng 1 — Vòng đời bài viết
