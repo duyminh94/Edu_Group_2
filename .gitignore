@@ -1,0 +1,18 @@
+# Thư mục build — không đẩy lên git
+bin/
+obj/
+
+# Cấu hình riêng của từng máy: chứa connection string và mật khẩu
+appsettings.Development.json
+
+# File người dùng của Visual Studio
+*.user
+*.suo
+.vs/
+
+# File upload lúc chạy thử — giữ lại thư mục nhưng bỏ nội dung
+wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
+
+# macOS
+.DS_Store

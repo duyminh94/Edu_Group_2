@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BlogPlatform</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @* TODO (Khu B): chèn CSS variables theo BlogSetting của tác giả đang xem *@
+</head>
+<body>
+    @*
+        KHU B (Người 2) sở hữu file này — Issue #2
+        Menu tài khoản tách ra partial riêng do Khu A sở hữu, để 2 người không sửa cùng file.
+    *@
+    <header>
+        @* TODO (Khu B): logo và ô tìm kiếm *@
+        @await Html.PartialAsync("_AccountMenu")
+    </header>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    <footer>
+        <p>&copy; 2026 - BlogPlatform</p>
+    </footer>
+
+    @* jQuery dùng chung cho AJAX (Issue #9) và validation form (Issue #3) — dùng CDN *@
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

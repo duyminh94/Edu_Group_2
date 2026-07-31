@@ -1,0 +1,5 @@
+/* CSS chung toàn site — biến màu/font sẽ bị đè bởi theme của từng tác giả */
+:root {
+    --primary: #2563eb;
+    --font: "Be Vietnam Pro", sans-serif;
+}

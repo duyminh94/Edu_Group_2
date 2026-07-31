@@ -1,0 +1,18 @@
+@model PostDetailViewModel
+@{
+    ViewData["Title"] = "Chi tiết bài viết";
+}
+@*
+    KHU B (Người 2) sở hữu file này — Issue #4
+    File này chỉ dựng khung. Phần tương tác nằm trong partial do Khu D sở hữu,
+    Khu B KHÔNG viết nội dung vào 2 partial đó, và Khu D KHÔNG sửa file này.
+*@
+
+@* TODO (Khu B): tiêu đề, tác giả, ngày đăng, chuyên mục, thẻ *@
+@* TODO (Khu B): nội dung bài — dùng @@Html.Raw(Model.SanitizedContent) *@
+
+@await Html.PartialAsync("_LikeBar", Model)
+
+@await Html.PartialAsync("_CommentTree", Model)
+
+@* TODO (Khu B): danh sách bài viết liên quan *@
