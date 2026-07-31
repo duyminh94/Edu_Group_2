@@ -373,6 +373,12 @@ Bốn package dưới đã khai báo trong `BlogPlatform.csproj`. Clone repo v�
 dotnet restore
 ```
 
+**Công cụ cần cài 1 lần trên máy** (nếu chưa có):
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
 | Package | Phiên bản | Dùng cho | Issue |
 |---------|-----------|----------|-------|
 | `Microsoft.EntityFrameworkCore.SqlServer` | 10.0.10 | Kết nối SQL Server | Mọi Issue |
@@ -383,11 +389,6 @@ dotnet restore
 > **Không ai được tự thêm package vào `BlogPlatform.csproj`.** Nếu 2 người cùng thêm ở
 > 2 branch khác nhau sẽ conflict. Cần package mới thì báo Người 1 thêm một lần.
 
-**Công cụ cần cài 1 lần trên máy** (nếu chưa có):
-
-```bash
-dotnet tool install --global dotnet-ef
-```
 
 ## Thư viện client — dùng CDN, không phải tải file
 
@@ -542,6 +543,140 @@ Nên Khu B phải làm Issue #4 sớm, ngay sau Issue #2.
 
 ## Tạo database — làm 1 lần trên máy mỗi người
 
+Dự án dùng **Code First**: cấu trúc bảng lấy từ Entity class trong `Models/`,
+không viết `create table` bằng tay.
+
+**Bước 1** — tạo file `appsettings.Development.json` (file này không có trên git),
+copy mẫu connection string trong `appsettings.json` rồi sửa cho khớp máy mình.
+
+**Bước 2** — tạo 12 bảng:
+
+```bash
+dotnet ef database update
+```
+
+**Bước 3** — chèn dữ liệu mẫu: mở `Database/SeedData.sql` trong SSMS, bấm F5.
+
+| Bảng | Số dòng |
+|------|---------|
+| Roles | 3 (Admin, Author, Reader) |
+| Users | 4 tài khoản mẫu, mật khẩu đều `Admin@123` |
+| Categories | 5 |
+| Tags | 8 |
+| Posts | 4 (3 bài đã đăng, 1 bài nháp) |
+| Comments | 4 (có 1 comment trả lời comment khác) |
+| PostLikes / Bookmarks | 5 / 2 |
+| BlogSettings | 2 tác giả có theme riêng |
+
+### Khi cần đổi cấu trúc bảng giữa chừng
+
+Chỉ sửa **một nơi duy nhất** là Entity class, rồi để EF Core lo phần còn lại:
+
+```bash
+# 1. Sửa file trong Models/, ví dụ thêm cột IsFeatured vào Post.cs
+# 2. Sinh migration mô tả thay đổi
+dotnet ef migrations add ThemCotIsFeatured
+# 3. Áp lên database
+dotnet ef database update
+```
+
+**Quy tắc cho cả nhóm:**
+
+- Báo trước khi đổi bảng — thay đổi ảnh hưởng nhiều khu
+- Commit file migration cùng với thay đổi Entity class, **không bỏ sót**
+- Người khác `git pull` xong chỉ cần chạy `dotnet ef database update` là DB khớp lại
+- Đặt tên migration bằng tiếng Việt không dấu, mô tả rõ việc: `ThemCotIsFeatured`,
+  `DoiKieuSlug` — không đặt `Update1`, `Fix2`
+- Sửa xong nhớ cập nhật `docs/blog-platform-erd.md` cho khớp
+
+---
+
+# Phụ lục
+
+## Bảng tổng hợp 13 Issue
+
+| # | Tên | Khu | Use case | Độ khó | Phụ thuộc |
+|---|-----|-----|----------|--------|-----------|
+| 1 | Session & Phân quyền | A | — | 🟡 | — |
+| 2 | Layout & Theme | B | — | 🟡 | — |
+| 3 | Tài khoản | A | UC07–09 | 🟡 | #1 |
+| 4 | Trang đọc | B | UC01,02,05 | 🟡 | #2 |
+| 5 | Quản lý bài viết | C | UC15–19,21 | 🔴 | #1 |
+| 6 | Upload & Sanitize | C | UC20 | 🔴 | #5 |
+| 7 | Bình luận | D | UC10,11 | 🔴 | #3,#4 |
+| 8 | Kiểm duyệt bình luận | D | UC22 | 🟡 | #7 |
+| 9 | Like / Bookmark | D | UC12–14 | 🟢 | #3,#4 |
+| 10 | Tìm kiếm & Lọc | B | UC03,04 | 🟡 | #4 |
+| 11 | Tuỳ biến giao diện | B | UC24 | 🟡 | #2,#3 |
+| 12 | Thống kê | C | UC06,23 | 🔴 | #4,#5 |
+| 13 | Quản trị | A | UC25–28 | 🟡 | #3,#5,#7 |
+
+## ⚠️ Quy ước tránh đụng file — ĐỌC TRƯỚC KHI CODE
+
+Trang chi tiết bài viết là chỗ 3 khu cùng cần chạm vào. Nếu không có quy ước,
+3 người sẽ sửa cùng `Detail.cshtml`, `BlogController.cs`, `PostDetailViewModel.cs`
+ở 3 branch khác nhau → **chắc chắn conflict khi merge**.
+
+Bốn quy ước dưới đây đã được áp sẵn vào code trong repo:
+
+### 1. `PostDetailViewModel` là contract chung — chỉ Khu B được sửa
+
+File `ViewModel/PostDetailViewModel.cs` đã khai báo **đầy đủ** property cho cả 3 khu,
+kể cả property chưa dùng tới. Khu C và Khu D chỉ **đọc**, thiếu gì báo Khu B thêm.
+
+### 2. Trang Detail chỉ là khung, nội dung nằm trong partial
+
+`Areas/User/Views/Blog/Detail.cshtml` (Khu B) chỉ gọi partial:
+
+```razor
+@await Html.PartialAsync("_LikeBar", Model)
+@await Html.PartialAsync("_CommentTree", Model)
+```
+
+### 3. Menu tài khoản tách khỏi `_Layout`
+
+`Views/Shared/_Layout.cshtml` (Khu B) gọi `@await Html.PartialAsync("_AccountMenu")`.
+
+### 4. Ghi nhận lượt xem: Khu B gọi hộ, Khu C chỉ viết service
+
+Khu B thêm sẵn 1 dòng trong action `Detail` ngay từ đầu:
+
+```csharp
+await analyticsService.RecordViewAsync(post.Id, HttpContext);
+```
+
+Khu C viết phần thân hàm trong `AnalyticsService.cs`, **không mở `BlogController.cs`**.
+
+---
+
+## Bảng chủ sở hữu file — mỗi file đúng 1 khu
+
+| File | Chủ sở hữu | Khu khác được làm gì |
+|------|-----------|----------------------|
+| `ViewModel/PostDetailViewModel.cs` | **Khu B** | Chỉ đọc |
+| `Areas/User/Views/Blog/Detail.cshtml` | **Khu B** | Không mở |
+| `Areas/User/Controllers/BlogController.cs` | **Khu B** | Không mở |
+| `Views/Shared/_Layout.cshtml` | **Khu B** | Không mở |
+| `Areas/*/Views/_ViewStart.cshtml` | **Khu B** | Không mở |
+| `Areas/User/Views/Shared/_LikeBar.cshtml` | **Khu D** | Không mở |
+| `Areas/User/Views/Shared/_CommentTree.cshtml` | **Khu D** | Không mở |
+| `Areas/User/Views/Shared/_CommentItem.cshtml` | **Khu D** | Không mở |
+| `ViewModel/CommentViewModel.cs` | **Khu D** | Chỉ đọc |
+| `Views/Shared/_AccountMenu.cshtml` | **Khu A** | Không mở |
+| `Program.cs` | **Khu A** | Không mở (xem ghi chú dưới) |
+
+> **`Program.cs`:** Người 1 bỏ comment **cả 10 dòng** đăng ký service ngay ngày đầu
+> (10 class skeleton đã build được sẵn). Sau đó 3 người còn lại không bao giờ phải mở file này.
+
+## Khu B là nút thắt — cần biết trước
+
+Ba khu còn lại đều chờ Khu B đóng băng `PostDetailViewModel` và `Detail.cshtml`.
+Nên Khu B phải làm Issue #4 sớm, ngay sau Issue #2.
+
+Đổi lại, chỉ mình Khu B phải chạy trước — thay vì cả nhóm chờ lẫn nhau.
+
+## Tạo database — làm 1 lần trên máy mỗi người
+
 Mở `Database/BlogPlatform.sql` trong SSMS, kết nối SQL Server rồi bấm **F5**.
 
 File này tạo sẵn:
@@ -560,6 +695,23 @@ File này tạo sẵn:
 Sau đó tạo file `appsettings.Development.json` (file này không có trên git),
 copy mẫu connection string trong `appsettings.json` rồi sửa cho khớp máy mình.
 
-> ⚠️ **Chọn 1 trong 2 cách, không làm cả hai:** dùng file SQL trên, **hoặc** dùng
-> `dotnet ef database update`. Chạy cả hai sẽ lỗi `There is already an object named 'Roles'`.
-> Nhóm thống nhất dùng **file SQL** cho đơn giản.
+### ⚠️ Khi cần đổi cấu trúc bảng giữa chừng
+
+Project **không dùng EF Core Migrations** (lớp chưa học tới). Nên cấu trúc bảng đang
+được mô tả ở **2 nơi**, sửa nơi này phải nhớ sửa nơi kia:
+
+| Nơi | Vai trò |
+|-----|---------|
+| `Database/BlogPlatform.sql` | Tạo bảng thật trong SQL Server |
+| `Models/*.cs` | Để EF Core đọc/ghi đúng cột |
+
+**Quy trình khi cần thêm hoặc đổi cột:**
+
+1. Báo cả nhóm trước — đổi bảng ảnh hưởng nhiều khu
+2. Sửa `Database/BlogPlatform.sql`
+3. Sửa Entity class tương ứng trong `Models/`
+4. Sửa `docs/blog-platform-erd.md` cho khớp
+5. Mỗi người chạy lại file SQL trên máy mình (xoá database cũ trước)
+
+> Bỏ sót bước 3 thì EF Core báo `Invalid column name` lúc chạy — lỗi hay gặp nhất
+> khi làm theo cách này.
