@@ -75,7 +75,7 @@ erDiagram
 | `Name` | `nvarchar(50)` | NOT NULL, **UNIQUE** | `Admin` / `Author` / `Reader` |
 | `Description` | `nvarchar(200)` | NULL | |
 
-Seed sẵn 3 dòng khi chạy lần đầu:
+Có sẵn 3 dòng, chèn từ `Database/SeedData.sql`:
 
 | Role | Quyền |
 |------|-------|
@@ -335,4 +335,4 @@ Hai lệnh này nằm trong cùng 1 transaction. Áp dụng tương tự cho `Li
 1. Vẽ **Use Case diagram** (4 actor: Guest / Reader / Author / Admin)
 2. Dựng project ASP.NET Core MVC + cấu hình Session
 3. Viết Entity classes theo đúng ERD này → `dotnet ef migrations add InitialCreate`
-4. Seed dữ liệu mẫu: 3 role, 1 admin, vài category/tag
+4. Chèn dữ liệu mẫu bằng `Database/SeedData.sql`: 3 role, 4 tài khoản, category/tag

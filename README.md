@@ -60,50 +60,48 @@ Nội dung — chọn 1 trong 2 mẫu tuỳ cách SQL Server của bạn đăng 
 
 > Cài SQL Server dạng named instance thì đổi `localhost` thành `localhost\SQLEXPRESS`.
 
-### Bước 3 — Tạo 12 bảng trong database
+### Bước 3 — Tạo 12 bảng + dữ liệu mẫu
 
-Dự án dùng **Code First**: bảng sinh ra từ Entity class trong `Models/`,
-không viết `create table` bằng tay.
-
-Chọn cách tương ứng với công cụ bạn dùng — **hai cách cho kết quả giống hệt nhau**:
+Có **2 cách**, chọn 1 tuỳ công cụ bạn quen dùng. Kết quả database giống hệt nhau.
 
 <details open>
-<summary><b>Cách A — VS Code (hoặc Terminal bất kỳ)</b></summary>
+<summary><b>Cách A — Chạy file SQL (nhanh nhất, chỉ cần SSMS)</b></summary>
 
-Cài công cụ `dotnet-ef`, chỉ cần làm **1 lần duy nhất** trên máy:
+Mở **`Database/SeedData.sql`** trong SSMS hoặc Azure Data Studio, bấm **F5**.
+
+Một lần chạy làm hết: tạo database → tạo 12 bảng → chèn dữ liệu mẫu.
+**Không cần** chạy `dotnet ef database update` nữa — file SQL đã ghi sẵn lịch sử
+migration vào bảng `__EFMigrationsHistory` để EF Core biết là đã xong.
+
+> ⚠️ File này **xoá sạch dữ liệu cũ** mỗi lần chạy. Chỉ dùng cho máy học/dev.
+
+</details>
+
+<details open>
+<summary><b>Cách B — Code First (bảng sinh từ Entity class trong <code>Models/</code>)</b></summary>
+
+**B1.** Tạo 12 bảng trống:
+
+| Công cụ | Lệnh |
+|---------|------|
+| VS Code / Terminal | `dotnet ef database update` |
+| Visual Studio 2022 | Mở **Tools → NuGet Package Manager → Package Manager Console**, chọn Default project là `BlogPlatform`, gõ `Update-Database` |
+
+Dùng Terminal thì cài `dotnet-ef` trước, **1 lần duy nhất** trên máy:
 
 ```bash
 dotnet tool install --global dotnet-ef
 ```
 
-Đứng trong thư mục chứa file `.csproj` rồi chạy:
-
-```bash
-dotnet ef database update
-```
+**B2.** Muốn có dữ liệu mẫu thì mở `Database/SeedData.sql`, chỉ chạy **phần 3**
+(khối `insert`) — bỏ qua phần 0–2 vì bảng đã có rồi.
 
 </details>
 
-<details open>
-<summary><b>Cách B — Visual Studio 2022</b></summary>
+> Dự án **không** có seeder tự chạy lúc khởi động. Dữ liệu mẫu chỉ đến từ file SQL,
+> nên `dotnet run` sẽ không tự chèn thêm gì.
 
-Không cần cài gì thêm, package `Microsoft.EntityFrameworkCore.Tools` đã có sẵn trong dự án.
-
-1. Mở menu **Tools → NuGet Package Manager → Package Manager Console**
-2. Ở ô **Default project** chọn `BlogPlatform`
-3. Gõ lệnh:
-
-```powershell
-Update-Database
-```
-
-</details>
-
-### Bước 4 — Chèn dữ liệu mẫu
-
-Mở **`Database/SeedData.sql`** trong SSMS, bấm **F5**.
-
-Dữ liệu tạo ra:
+Dữ liệu mẫu gồm:
 
 | Bảng | Số dòng |
 |------|---------|
@@ -116,7 +114,7 @@ Dữ liệu tạo ra:
 | PostLikes / Bookmarks | 5 / 2 |
 | BlogSettings | 2 tác giả có theme riêng |
 
-### Bước 5 — Chạy dự án
+### Bước 4 — Chạy dự án
 
 ```bash
 dotnet run
@@ -209,7 +207,7 @@ BlogPlatform/
 ├── ViewModel/         Dữ liệu truyền từ Controller sang View
 ├── Filters/           SessionAuthorizeAttribute — phân quyền
 ├── Helpers/           SessionKeys — tên khoá lưu trong Session
-├── Database/          SeedData.sql — dữ liệu mẫu
+├── Database/          SeedData.sql — tạo bảng + dữ liệu mẫu, chạy thẳng trên SSMS
 ├── docs/              ERD, Use Case, phân công
 └── wwwroot/           css, js, 4 theme preset, thư mục uploads
 ```
@@ -241,9 +239,10 @@ Mỗi thành viên phụ trách 1 khu chức năng. Xem bảng chủ sở hữu 
 | `A network-related or instance-specific error` | Sai tên Server, hoặc SQL Server chưa chạy | Kiểm tra tên instance trong SSMS |
 | `dotnet ef: command not found` | Chưa cài công cụ | `dotnet tool install --global dotnet-ef` |
 | `Invalid column name 'X'` | Entity class có cột mà database chưa có | Chạy `dotnet ef database update` |
-| `There is already an object named 'Roles'` | Database đã có bảng từ trước | `dotnet ef database drop` rồi update lại |
+| `There is already an object named 'Roles'` | Đã tạo bảng bằng `SeedData.sql` rồi còn chạy `dotnet ef database update` | Không cần update nữa — xem lại Bước 3 Cách A |
 | `Unable to create a 'DbContext'` | Đứng sai thư mục khi chạy lệnh | `cd` vào thư mục chứa file `.csproj` |
-| Đăng nhập báo sai mật khẩu | Chưa chạy `SeedData.sql` | Làm lại Bước 4 |
+| `Violation of UNIQUE KEY constraint 'IX_Roles_Name'` | Chạy `SeedData.sql` 2 lần chồng nhau | Chạy lại nguyên file — phần 1 tự xoá bảng cũ trước |
+| Đăng nhập báo sai mật khẩu | Chưa chèn dữ liệu mẫu | Làm lại Bước 3 |
 
 ---
 

@@ -267,4 +267,4 @@ trước khi cho thao tác.
 1. Xuất sơ đồ PlantUML ra ảnh PNG để chèn vào báo cáo
 2. Dựng project ASP.NET Core MVC + cấu hình Session (tự quản đăng nhập)
 3. Viết Entity classes theo [ERD](./blog-platform-erd.md) → `dotnet ef migrations add InitialCreate`
-4. Seed 3 role (`Admin`, `Author`, `Reader`) + 1 tài khoản admin
+4. Chèn 3 role (`Admin`, `Author`, `Reader`) + tài khoản admin bằng `Database/SeedData.sql`

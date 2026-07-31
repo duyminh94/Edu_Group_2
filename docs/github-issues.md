@@ -543,19 +543,24 @@ Nên Khu B phải làm Issue #4 sớm, ngay sau Issue #2.
 
 ## Tạo database — làm 1 lần trên máy mỗi người
 
-Dự án dùng **Code First**: cấu trúc bảng lấy từ Entity class trong `Models/`,
-không viết `create table` bằng tay.
-
 **Bước 1** — tạo file `appsettings.Development.json` (file này không có trên git),
 copy mẫu connection string trong `appsettings.json` rồi sửa cho khớp máy mình.
 
-**Bước 2** — tạo 12 bảng:
+**Bước 2** — tạo bảng và dữ liệu mẫu. Chọn **1 trong 2 cách**, kết quả như nhau:
 
-```bash
-dotnet ef database update
-```
+| | Cách A — file SQL | Cách B — Code First |
+|---|---|---|
+| Làm gì | Mở `Database/SeedData.sql` trong SSMS, bấm F5 | Chạy `dotnet ef database update`, rồi chạy riêng phần 3 của `SeedData.sql` nếu muốn dữ liệu mẫu |
+| Được gì | Tạo database + 12 bảng + dữ liệu mẫu trong 1 lần | 12 bảng trống, sinh từ Entity class trong `Models/` |
+| Hợp với | Ai chỉ cần DB chạy được ngay, không rành lệnh `dotnet ef` | Ai cần sửa Entity rồi sinh migration |
 
-**Bước 3** — chèn dữ liệu mẫu: mở `Database/SeedData.sql` trong SSMS, bấm F5.
+Cách A đã ghi sẵn lịch sử migration vào bảng `__EFMigrationsHistory`,
+nên **không cần** chạy `dotnet ef database update` sau đó.
+
+> Dự án **không** có seeder tự chạy lúc khởi động — `dotnet run` không tự chèn dữ liệu.
+> Muốn thêm dữ liệu mẫu thì sửa phần 3 của `Database/SeedData.sql`.
+
+Dữ liệu mẫu gồm:
 
 | Bảng | Số dòng |
 |------|---------|
