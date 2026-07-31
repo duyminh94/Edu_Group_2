@@ -13,6 +13,7 @@ tìm kiếm và tuỳ biến giao diện riêng cho từng tác giả.
 |------|----------|
 | [docs/blog-platform-erd.md](docs/blog-platform-erd.md) | ERD 12 bảng, quy tắc xoá 17 khoá ngoại |
 | [docs/blog-platform-usecase.md](docs/blog-platform-usecase.md) | 28 use case, 4 actor |
+| [docs/business-rules.md](docs/business-rules.md) | **Quy tắc nghiệp vụ cho tầng Service** — đọc trước khi code |
 | [docs/github-issues.md](docs/github-issues.md) | Phân công 4 khu + quy ước tránh đụng file |
 
 ---

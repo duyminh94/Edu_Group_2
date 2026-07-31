@@ -1,7 +1,7 @@
 # Danh sách Issue — Edu_Group_2 (Blogging Platform)
 
 13 Issue chia thành **4 khu chức năng**, mỗi thành viên phụ trách trọn 1 khu.
-Tài liệu tham chiếu: [ERD](./blog-platform-erd.md) · [Use Case](./blog-platform-usecase.md)
+Tài liệu tham chiếu: [ERD](./blog-platform-erd.md) · [Use Case](./blog-platform-usecase.md) · [Quy tắc nghiệp vụ](./business-rules.md)
 
 ---
 
