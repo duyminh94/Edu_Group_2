@@ -58,6 +58,4 @@ app.MapControllerRoute(
     pattern: "{controller=Blog}/{action=Index}/{id?}",
     defaults: new { area = "User" });
 
-// TODO: gọi DbSeeder tạo 3 role + tài khoản admin khi chạy lần đầu
-
 app.Run();
