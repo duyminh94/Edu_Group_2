@@ -14,7 +14,11 @@ tìm kiếm và tuỳ biến giao diện riêng cho từng tác giả.
 | [docs/blog-platform-erd.md](docs/blog-platform-erd.md) | ERD 12 bảng, quy tắc xoá 17 khoá ngoại |
 | [docs/blog-platform-usecase.md](docs/blog-platform-usecase.md) | 28 use case, 4 actor |
 | [docs/business-rules.md](docs/business-rules.md) | **Quy tắc nghiệp vụ cho tầng Service** — đọc trước khi code |
+| [docs/service-layer-outline.md](docs/service-layer-outline.md) | **Dàn ý tầng nghiệp vụ** — chữ ký 11 service, quy ước kiểu trả về, ai sở hữu file nào |
 | [docs/github-issues.md](docs/github-issues.md) | Phân công 4 khu + quy ước tránh đụng file |
+
+> Thứ tự nên đọc: `github-issues` (biết mình làm khu nào) → `business-rules` (biết quy tắc)
+> → `service-layer-outline` (biết viết hàm gì, trả kiểu gì).
 
 ---
 
@@ -203,8 +207,8 @@ BlogPlatform/
 ├── Models/            12 Entity class + 2 enum
 ├── Data/              BlogDbContext — cấu hình 17 khoá ngoại
 ├── Migrations/        Lịch sử thay đổi cấu trúc bảng (EF Core sinh)
-├── Services/          Tầng nghiệp vụ — 8 cặp interface + implementation
-├── ViewModel/         Dữ liệu truyền từ Controller sang View
+├── Services/          Tầng nghiệp vụ — 10 cặp interface + implementation (còn rỗng)
+├── ViewModel/         15 class dữ liệu truyền từ Controller sang View
 ├── Filters/           SessionAuthorizeAttribute — phân quyền
 ├── Helpers/           SessionKeys — tên khoá lưu trong Session
 ├── Database/          SeedData.sql — tạo bảng + dữ liệu mẫu, chạy thẳng trên SSMS
@@ -241,6 +245,8 @@ Mỗi thành viên phụ trách 1 khu chức năng. Xem bảng chủ sở hữu 
 | `Invalid column name 'X'` | Entity class có cột mà database chưa có | Chạy `dotnet ef database update` |
 | `There is already an object named 'Roles'` | Đã tạo bảng bằng `SeedData.sql` rồi còn chạy `dotnet ef database update` | Không cần update nữa — xem lại Bước 3 Cách A |
 | `Unable to create a 'DbContext'` | Đứng sai thư mục khi chạy lệnh | `cd` vào thư mục chứa file `.csproj` |
+| `CS0535: 'PostService' does not implement interface member` | Đã khai báo hàm trong interface nhưng class chưa có hàm đó | Thêm hàm vào class. Chưa viết được thân hàm thì tạm để `throw new NotImplementedException();` cho build chạy |
+| Vào `/post/ten-bai-viet` bị 404 | Chưa viết action `Detail` trong `BlogController` | Route đã cấu hình sẵn trong `Program.cs`, chỉ thiếu action — thuộc Issue #4 |
 | `Violation of UNIQUE KEY constraint 'IX_Roles_Name'` | Chạy `SeedData.sql` 2 lần chồng nhau | Chạy lại nguyên file — phần 1 tự xoá bảng cũ trước |
 | Đăng nhập báo sai mật khẩu | Chưa chèn dữ liệu mẫu | Làm lại Bước 3 |
 
@@ -256,3 +262,17 @@ Mỗi thành viên phụ trách 1 khu chức năng. Xem bảng chủ sở hữu 
   UserId trong Session) — chống lỗi IDOR.
 - **Không tự thêm package vào `BlogPlatform.csproj`** — 2 người cùng thêm ở 2 branch
   sẽ conflict. Cần package mới thì báo người phụ trách Khu A thêm một lần.
+
+### `Program.cs` đã cấu hình sẵn — không ai cần mở
+
+| Đã có sẵn | Chi tiết |
+|-----------|----------|
+| 10 dòng đăng ký DI | 8 service `Scoped` + 2 service `Singleton` (`IPasswordService`, `IHtmlSanitizerService` không đụng DB) |
+| Session 30 phút | Đúng quy tắc 3.9 |
+| 4 route URL dạng slug | `/post/{slug}` · `/author/{username}` · `/category/{slug}` · `/tag/{slug}` — khai báo **trước** route mặc định vì route khớp theo đúng thứ tự |
+
+Hai chỗ còn để comment sẵn, kèm ghi chú ngay trong file:
+
+- `ITaxonomyService` — chờ nhóm duyệt [dàn ý §3 mục 4](docs/service-layer-outline.md)
+- `UseStatusCodePagesWithReExecute` — Khu B bật sau khi viết xong action `BlogController.Error`,
+  bật sớm sẽ biến lỗi 404 thành lỗi chồng lỗi

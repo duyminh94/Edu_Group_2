@@ -1,7 +1,7 @@
 # Danh sách Issue — Edu_Group_2 (Blogging Platform)
 
 13 Issue chia thành **4 khu chức năng**, mỗi thành viên phụ trách trọn 1 khu.
-Tài liệu tham chiếu: [ERD](./blog-platform-erd.md) · [Use Case](./blog-platform-usecase.md) · [Quy tắc nghiệp vụ](./business-rules.md)
+Tài liệu tham chiếu: [ERD](./blog-platform-erd.md) · [Use Case](./blog-platform-usecase.md) · [Quy tắc nghiệp vụ](./business-rules.md) · [Dàn ý tầng nghiệp vụ](./service-layer-outline.md)
 
 ---
 
@@ -57,8 +57,9 @@ Cả nhóm đang chờ Issue này — làm trước tiên.
   - Chưa đăng nhập → redirect `/User/Account/Login` kèm `returnUrl`
   - Sai role → trả về 403 Forbidden
   - Hợp lệ → cho request đi tiếp
-- [ ] ⚠️ Bỏ comment **cả 10 dòng** đăng ký service trong `Program.cs` (không chỉ dòng của mình)
-      — làm 1 lần để 3 khu còn lại không bao giờ phải mở file này
+- [x] ~~Bỏ comment 10 dòng đăng ký service trong `Program.cs`~~ — **đã làm sẵn khi dựng
+      sườn**, Khu A không phải mở file này nữa. Dòng thứ 11 (`ITaxonomyService`) vẫn để
+      comment, chờ nhóm duyệt [dàn ý §3 mục 4](./service-layer-outline.md)
 - [ ] Test: vào `/Author/Post/Index` khi chưa đăng nhập phải bị đẩy về trang login
 
 **Cảnh báo bảo mật:** không dùng MD5 hay SHA-1 để băm mật khẩu.
@@ -88,7 +89,7 @@ Cả nhóm đang chờ Issue này — làm trước tiên.
 - [ ] Viết `Views/Shared/_AccountMenu.cshtml` — **Khu A sở hữu file này**, Khu B không sửa
 
 **Dữ liệu để đăng nhập thử:** đã có sẵn, không phải tạo tay.
-Chạy `Database/BlogPlatform.sql` trong SSMS là có 3 vai trò và 4 tài khoản mẫu.
+Chạy `Database/SeedData.sql` trong SSMS là có 3 vai trò và 4 tài khoản mẫu.
 
 | Tài khoản | Mật khẩu | Vai trò |
 |-----------|----------|---------|
@@ -531,8 +532,10 @@ Khu C viết phần thân hàm trong `AnalyticsService.cs`, **không mở `BlogC
 | `Views/Shared/_AccountMenu.cshtml` | **Khu A** | Không mở |
 | `Program.cs` | **Khu A** | Không mở (xem ghi chú dưới) |
 
-> **`Program.cs`:** Người 1 bỏ comment **cả 10 dòng** đăng ký service ngay ngày đầu
-> (10 class skeleton đã build được sẵn). Sau đó 3 người còn lại không bao giờ phải mở file này.
+> **`Program.cs`:** 10 dòng đăng ký service **đã bỏ comment sẵn** khi dựng sườn, cùng với
+> 4 route URL dạng slug (`/post/{slug}`, `/author/{username}`, `/category/{slug}`, `/tag/{slug}`).
+> Cả 4 khu đều không cần mở file này nữa. Trường hợp duy nhất phải mở: sau khi nhóm duyệt
+> việc bổ sung `ITaxonomyService` thì Khu A bỏ comment nốt dòng thứ 11.
 
 ## Khu B là nút thắt — cần biết trước
 
@@ -593,130 +596,3 @@ dotnet ef database update
 - Đặt tên migration bằng tiếng Việt không dấu, mô tả rõ việc: `ThemCotIsFeatured`,
   `DoiKieuSlug` — không đặt `Update1`, `Fix2`
 - Sửa xong nhớ cập nhật `docs/blog-platform-erd.md` cho khớp
-
----
-
-# Phụ lục
-
-## Bảng tổng hợp 13 Issue
-
-| # | Tên | Khu | Use case | Độ khó | Phụ thuộc |
-|---|-----|-----|----------|--------|-----------|
-| 1 | Session & Phân quyền | A | — | 🟡 | — |
-| 2 | Layout & Theme | B | — | 🟡 | — |
-| 3 | Tài khoản | A | UC07–09 | 🟡 | #1 |
-| 4 | Trang đọc | B | UC01,02,05 | 🟡 | #2 |
-| 5 | Quản lý bài viết | C | UC15–19,21 | 🔴 | #1 |
-| 6 | Upload & Sanitize | C | UC20 | 🔴 | #5 |
-| 7 | Bình luận | D | UC10,11 | 🔴 | #3,#4 |
-| 8 | Kiểm duyệt bình luận | D | UC22 | 🟡 | #7 |
-| 9 | Like / Bookmark | D | UC12–14 | 🟢 | #3,#4 |
-| 10 | Tìm kiếm & Lọc | B | UC03,04 | 🟡 | #4 |
-| 11 | Tuỳ biến giao diện | B | UC24 | 🟡 | #2,#3 |
-| 12 | Thống kê | C | UC06,23 | 🔴 | #4,#5 |
-| 13 | Quản trị | A | UC25–28 | 🟡 | #3,#5,#7 |
-
-## ⚠️ Quy ước tránh đụng file — ĐỌC TRƯỚC KHI CODE
-
-Trang chi tiết bài viết là chỗ 3 khu cùng cần chạm vào. Nếu không có quy ước,
-3 người sẽ sửa cùng `Detail.cshtml`, `BlogController.cs`, `PostDetailViewModel.cs`
-ở 3 branch khác nhau → **chắc chắn conflict khi merge**.
-
-Bốn quy ước dưới đây đã được áp sẵn vào code trong repo:
-
-### 1. `PostDetailViewModel` là contract chung — chỉ Khu B được sửa
-
-File `ViewModel/PostDetailViewModel.cs` đã khai báo **đầy đủ** property cho cả 3 khu,
-kể cả property chưa dùng tới. Khu C và Khu D chỉ **đọc**, thiếu gì báo Khu B thêm.
-
-### 2. Trang Detail chỉ là khung, nội dung nằm trong partial
-
-`Areas/User/Views/Blog/Detail.cshtml` (Khu B) chỉ gọi partial:
-
-```razor
-@await Html.PartialAsync("_LikeBar", Model)
-@await Html.PartialAsync("_CommentTree", Model)
-```
-
-### 3. Menu tài khoản tách khỏi `_Layout`
-
-`Views/Shared/_Layout.cshtml` (Khu B) gọi `@await Html.PartialAsync("_AccountMenu")`.
-
-### 4. Ghi nhận lượt xem: Khu B gọi hộ, Khu C chỉ viết service
-
-Khu B thêm sẵn 1 dòng trong action `Detail` ngay từ đầu:
-
-```csharp
-await analyticsService.RecordViewAsync(post.Id, HttpContext);
-```
-
-Khu C viết phần thân hàm trong `AnalyticsService.cs`, **không mở `BlogController.cs`**.
-
----
-
-## Bảng chủ sở hữu file — mỗi file đúng 1 khu
-
-| File | Chủ sở hữu | Khu khác được làm gì |
-|------|-----------|----------------------|
-| `ViewModel/PostDetailViewModel.cs` | **Khu B** | Chỉ đọc |
-| `Areas/User/Views/Blog/Detail.cshtml` | **Khu B** | Không mở |
-| `Areas/User/Controllers/BlogController.cs` | **Khu B** | Không mở |
-| `Views/Shared/_Layout.cshtml` | **Khu B** | Không mở |
-| `Areas/*/Views/_ViewStart.cshtml` | **Khu B** | Không mở |
-| `Areas/User/Views/Shared/_LikeBar.cshtml` | **Khu D** | Không mở |
-| `Areas/User/Views/Shared/_CommentTree.cshtml` | **Khu D** | Không mở |
-| `Areas/User/Views/Shared/_CommentItem.cshtml` | **Khu D** | Không mở |
-| `ViewModel/CommentViewModel.cs` | **Khu D** | Chỉ đọc |
-| `Views/Shared/_AccountMenu.cshtml` | **Khu A** | Không mở |
-| `Program.cs` | **Khu A** | Không mở (xem ghi chú dưới) |
-
-> **`Program.cs`:** Người 1 bỏ comment **cả 10 dòng** đăng ký service ngay ngày đầu
-> (10 class skeleton đã build được sẵn). Sau đó 3 người còn lại không bao giờ phải mở file này.
-
-## Khu B là nút thắt — cần biết trước
-
-Ba khu còn lại đều chờ Khu B đóng băng `PostDetailViewModel` và `Detail.cshtml`.
-Nên Khu B phải làm Issue #4 sớm, ngay sau Issue #2.
-
-Đổi lại, chỉ mình Khu B phải chạy trước — thay vì cả nhóm chờ lẫn nhau.
-
-## Tạo database — làm 1 lần trên máy mỗi người
-
-Mở `Database/BlogPlatform.sql` trong SSMS, kết nối SQL Server rồi bấm **F5**.
-
-File này tạo sẵn:
-
-| Bảng | Số dòng |
-|------|---------|
-| Roles | 3 (Admin, Author, Reader) |
-| Users | 4 tài khoản mẫu, mật khẩu đều là `Admin@123` |
-| Categories | 5 |
-| Tags | 8 |
-| Posts | 4 (3 bài đã đăng, 1 bài nháp) |
-| Comments | 4 (có 1 comment trả lời comment khác) |
-| PostLikes / Bookmarks | 5 / 2 |
-| BlogSettings | 2 tác giả có theme riêng |
-
-Sau đó tạo file `appsettings.Development.json` (file này không có trên git),
-copy mẫu connection string trong `appsettings.json` rồi sửa cho khớp máy mình.
-
-### ⚠️ Khi cần đổi cấu trúc bảng giữa chừng
-
-Project **không dùng EF Core Migrations** (lớp chưa học tới). Nên cấu trúc bảng đang
-được mô tả ở **2 nơi**, sửa nơi này phải nhớ sửa nơi kia:
-
-| Nơi | Vai trò |
-|-----|---------|
-| `Database/BlogPlatform.sql` | Tạo bảng thật trong SQL Server |
-| `Models/*.cs` | Để EF Core đọc/ghi đúng cột |
-
-**Quy trình khi cần thêm hoặc đổi cột:**
-
-1. Báo cả nhóm trước — đổi bảng ảnh hưởng nhiều khu
-2. Sửa `Database/BlogPlatform.sql`
-3. Sửa Entity class tương ứng trong `Models/`
-4. Sửa `docs/blog-platform-erd.md` cho khớp
-5. Mỗi người chạy lại file SQL trên máy mình (xoá database cũ trước)
-
-> Bỏ sót bước 3 thì EF Core báo `Invalid column name` lúc chạy — lỗi hay gặp nhất
-> khi làm theo cách này.

@@ -3,6 +3,11 @@
 Tài liệu định nghĩa **quy tắc nghiệp vụ** để viết tầng Service.
 Đọc cùng: [ERD](./blog-platform-erd.md) · [Use Case](./blog-platform-usecase.md) · [Phân công Issue](./github-issues.md)
 
+> ⚠️ **Phần "Chữ ký hàm đề xuất" trong tài liệu này là bản nháp.** Bản chốt nằm ở
+> [Dàn ý tầng nghiệp vụ](./service-layer-outline.md) — trong đó §3 nêu **4 điểm cần sửa**
+> của chính tài liệu này (còn chờ nhóm duyệt) và §5 bổ sung 2 service chưa có chữ ký.
+> **Quy tắc nghiệp vụ (mục 1–8) vẫn giữ nguyên**, chỉ phần chữ ký hàm là thay đổi.
+
 ---
 
 ## 0. Tầng nghiệp vụ nằm ở đâu
