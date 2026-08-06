@@ -41,9 +41,7 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
 
-// TODO: bỏ comment sau khi nhóm duyệt việc bổ sung ITaxonomyService
-//       (xem docs/service-layer-outline.md §3 mục 4) và tạo 2 file tương ứng
-// builder.Services.AddScoped<ITaxonomyService, TaxonomyService>();
+builder.Services.AddScoped<ITaxonomyService, TaxonomyService>();
 
 var app = builder.Build();
 

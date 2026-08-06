@@ -10,5 +10,17 @@ namespace BlogPlatform.Areas.Admin.Controllers
     [SessionAuthorize(Roles = "Admin")]
     public class DashboardController : Controller
     {
+        private readonly IAnalyticsService analyticsService;
+
+        public DashboardController(IAnalyticsService analyticsService)
+        {
+            this.analyticsService = analyticsService;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var stats = await analyticsService.GetSystemWideAsync();
+            return View(stats);
+        }
     }
 }

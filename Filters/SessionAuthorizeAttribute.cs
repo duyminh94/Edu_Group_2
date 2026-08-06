@@ -1,3 +1,4 @@
+using BlogPlatform.Helpers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -16,5 +17,35 @@ namespace BlogPlatform.Filters
         //      kèm returnUrl để đăng nhập xong quay lại đúng trang đang xem
         //   2. Đã đăng nhập nhưng role không nằm trong Roles → trả về 403 Forbidden
         //   3. Hợp lệ → cho request đi tiếp
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var session = context.HttpContext.Session;
+            var userId = session.GetInt32(SessionKeys.UserId);
+            var roleName = session.GetString(SessionKeys.RoleName);
+
+            //  1. Chưa đăng nhập -> Chuyển hướng về trang Login kèm returnUrl
+
+            if(userId == null)
+            {
+                var returnUrl = context.HttpContext.Request.Path + context.HttpContext.Request.QueryString;
+                context.Result = new RedirectToActionResult("Login", "Account", new { areas  = "Users" , returnUrl });
+                return;
+            }
+
+            // 2. Đã đăng nhập -> Kiểm tra Role nếu thuộc tính Roles có khai báo
+            if (!string.IsNullOrEmpty(Roles))
+            {
+                var allowedRoles = Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if(string.IsNullOrEmpty(roleName) || !allowedRoles.Contains(roleName , StringComparer.OrdinalIgnoreCase))
+                {
+                    context.Result = new StatusCodeResult(403);
+                    return;
+                }
+
+                base.OnActionExecuting(context);
+            }
+   
+        }
+
     }
 }
