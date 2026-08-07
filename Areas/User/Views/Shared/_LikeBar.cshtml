@@ -1,3 +1,4 @@
+@using BlogPlatform.ViewModel
 @model PostDetailViewModel
 @*
     Thanh thích / lưu bài / chia sẻ — Issue #9
@@ -5,5 +6,183 @@
     Được gọi từ Areas/User/Views/Blog/Detail.cshtml
 *@
 
-@* TODO: nút Thích, nút Lưu bài, nút Chia sẻ — xử lý bằng AJAX *@
-@* Chưa đăng nhập (Model.IsLoggedIn = false) thì bấm vào đẩy về trang login *@
+<form id="interaction-antiforgery" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+
+<div class="interaction-bar my-4 py-3 px-3 bg-light rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2 border">
+    <div class="d-flex align-items-center gap-2">
+        @* Nút Thích (Like) *@
+        <button type="button" 
+                id="btn-like" 
+                class="btn @(Model.IsLiked ? "btn-danger" : "btn-outline-danger") fw-semibold d-inline-flex align-items-center"
+                data-post-id="@(Model.Post?.Id ?? 0)"
+                data-is-active="@(Model.IsLiked ? "true" : "false")"
+                data-logged-in="@(Model.IsLoggedIn ? "true" : "false")">
+            <i class="bi @(Model.IsLiked ? "bi-heart-fill" : "bi-heart") me-1" id="like-icon"></i>
+            <span>Thích</span>
+            <span class="badge bg-white text-dark ms-2 fw-bold" id="like-count">@(Model.Post?.LikeCount ?? 0)</span>
+        </button>
+
+        @* Nút Lưu bài (Bookmark) *@
+        <button type="button" 
+                id="btn-bookmark" 
+                class="btn @(Model.IsBookmarked ? "btn-primary" : "btn-outline-primary") fw-semibold d-inline-flex align-items-center"
+                data-post-id="@(Model.Post?.Id ?? 0)"
+                data-is-active="@(Model.IsBookmarked ? "true" : "false")"
+                data-logged-in="@(Model.IsLoggedIn ? "true" : "false")">
+            <i class="bi @(Model.IsBookmarked ? "bi-bookmark-fill" : "bi-bookmark") me-1" id="bookmark-icon"></i>
+            <span id="bookmark-text">@(Model.IsBookmarked ? "Đã lưu" : "Lưu bài")</span>
+        </button>
+    </div>
+
+    @* Nút Chia sẻ *@
+    <div>
+        <button type="button" 
+                id="btn-share" 
+                class="btn btn-outline-secondary fw-semibold d-inline-flex align-items-center"
+                onclick="copyPostUrl()">
+            <i class="bi bi-share me-1"></i>
+            <span>Chia sẻ</span>
+        </button>
+    </div>
+</div>
+
+@* Dynamic Toast Feedback *@
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="interaction-toast" class="toast align-items-center text-white bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toast-message">
+                Đã sao chép liên kết bài viết!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const btnLike = document.getElementById("btn-like");
+        const btnBookmark = document.getElementById("btn-bookmark");
+        const afTokenInput = document.querySelector("#interaction-antiforgery input[name='__RequestVerificationToken']");
+        const token = afTokenInput ? afTokenInput.value : "";
+
+        function showToast(message) {
+            const toastEl = document.getElementById("interaction-toast");
+            const toastMsg = document.getElementById("toast-message");
+            if (toastEl && toastMsg) {
+                toastMsg.textContent = message;
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            } else {
+                alert(message);
+            }
+        }
+
+        if (btnLike) {
+            btnLike.addEventListener("click", function () {
+                const isLoggedIn = btnLike.getAttribute("data-logged-in") === "true";
+                if (!isLoggedIn) {
+                    window.location.href = "/User/Account/Login?returnUrl=" + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+
+                const postId = btnLike.getAttribute("data-post-id");
+                const formData = new FormData();
+                formData.append("postId", postId);
+                if (token) formData.append("__RequestVerificationToken", token);
+
+                fetch("/User/Interaction/ToggleLike", {
+                    method: "POST",
+                    body: formData,
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isSuccess) {
+                        const icon = document.getElementById("like-icon");
+                        const countSpan = document.getElementById("like-count");
+                        if (data.isActive) {
+                            btnLike.className = "btn btn-danger fw-semibold d-inline-flex align-items-center";
+                            icon.className = "bi bi-heart-fill me-1";
+                            btnLike.setAttribute("data-is-active", "true");
+                        } else {
+                            btnLike.className = "btn btn-outline-danger fw-semibold d-inline-flex align-items-center";
+                            icon.className = "bi bi-heart me-1";
+                            btnLike.setAttribute("data-is-active", "false");
+                        }
+                        if (countSpan) countSpan.textContent = data.newCount;
+                    } else if (data.message) {
+                        showToast(data.message);
+                    }
+                })
+                .catch(err => {
+                    showToast("Lỗi khi gửi yêu cầu thích bài viết.");
+                });
+            });
+        }
+
+        if (btnBookmark) {
+            btnBookmark.addEventListener("click", function () {
+                const isLoggedIn = btnBookmark.getAttribute("data-logged-in") === "true";
+                if (!isLoggedIn) {
+                    window.location.href = "/User/Account/Login?returnUrl=" + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+
+                const postId = btnBookmark.getAttribute("data-post-id");
+                const formData = new FormData();
+                formData.append("postId", postId);
+                if (token) formData.append("__RequestVerificationToken", token);
+
+                fetch("/User/Interaction/ToggleBookmark", {
+                    method: "POST",
+                    body: formData,
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.isSuccess) {
+                        const icon = document.getElementById("bookmark-icon");
+                        const textSpan = document.getElementById("bookmark-text");
+                        if (data.isActive) {
+                            btnBookmark.className = "btn btn-primary fw-semibold d-inline-flex align-items-center";
+                            icon.className = "bi bi-bookmark-fill me-1";
+                            if (textSpan) textSpan.textContent = "Đã lưu";
+                            btnBookmark.setAttribute("data-is-active", "true");
+                            showToast("Đã lưu bài viết vào danh sách của bạn.");
+                        } else {
+                            btnBookmark.className = "btn btn-outline-primary fw-semibold d-inline-flex align-items-center";
+                            icon.className = "bi bi-bookmark me-1";
+                            if (textSpan) textSpan.textContent = "Lưu bài";
+                            btnBookmark.setAttribute("data-is-active", "false");
+                            showToast("Đã bỏ lưu bài viết.");
+                        }
+                    } else if (data.message) {
+                        showToast(data.message);
+                    }
+                })
+                .catch(err => {
+                    showToast("Lỗi khi gửi yêu cầu lưu bài viết.");
+                });
+            });
+        }
+    });
+
+    function copyPostUrl() {
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            const toastEl = document.getElementById("interaction-toast");
+            const toastMsg = document.getElementById("toast-message");
+            if (toastEl && toastMsg) {
+                toastMsg.textContent = "Đã sao chép liên kết bài viết vào bộ nhớ tạm!";
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            } else {
+                alert("Đã sao chép liên kết bài viết!");
+            }
+        }).catch(function(err) {
+            alert("Không thể sao chép liên kết.");
+        });
+    }
+</script>
+
