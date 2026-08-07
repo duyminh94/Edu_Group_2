@@ -1,3 +1,5 @@
+using BlogPlatform.Models.Enums;
+
 namespace BlogPlatform.ViewModel
 {
     // Một bình luận và các bình luận trả lời nó — dùng để dựng cây tối đa 3 cấp
@@ -5,6 +7,7 @@ namespace BlogPlatform.ViewModel
     public class CommentViewModel
     {
         public int Id { get; set; }
+        public int UserId { get; set; }
 
         // Thông tin người bình luận, lấy sẵn để view không phải truy vấn thêm
         public string DisplayName { get; set; } = string.Empty;
@@ -13,6 +16,10 @@ namespace BlogPlatform.ViewModel
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
 
+        // Trạng thái bình luận
+        public CommentStatus Status { get; set; } = CommentStatus.Approved;
+        public bool IsPending => Status == CommentStatus.Pending;
+
         // Cấp hiện tại trong cây: 1 = bình luận gốc, tối đa 3
         public int Level { get; set; } = 1;
 
@@ -20,3 +27,4 @@ namespace BlogPlatform.ViewModel
         public List<CommentViewModel> Replies { get; set; } = new();
     }
 }
+

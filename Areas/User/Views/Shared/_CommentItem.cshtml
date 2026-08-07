@@ -1,8 +1,115 @@
+@using BlogPlatform.ViewModel
 @model CommentViewModel
 @*
     Một bình luận trong cây — gọi đệ quy chính nó để render Replies
     ⚠️ KHU D (Người 4) SỞ HỮU FILE NÀY.
 *@
 
-@* TODO: hiển thị avatar, tên, nội dung, thời gian, nút Trả lời *@
-@* TODO: nếu Model.Level < 3 thì duyệt Model.Replies và gọi lại partial này *@
+@{
+    bool isLoggedIn = ViewData["IsLoggedIn"] as bool? ?? false;
+    int postId = ViewData["PostId"] as int? ?? 0;
+    string avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl) ? Model.AvatarUrl : "/images/default-avatar.png";
+}
+
+<div class="comment-item mb-3 pb-3 @(Model.Level > 1 ? "ms-3 ms-md-4 ps-2 border-start" : "")" id="comment-@Model.Id">
+    <div class="d-flex align-items-start">
+        @* Avatar *@
+        <img src="@avatar" alt="@Model.DisplayName" 
+             class="rounded-circle me-3 flex-shrink-0" 
+             style="width: 40px; height: 40px; object-fit: cover;"
+             onerror="this.src='https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.DisplayName)&background=random'" />
+
+        <div class="flex-grow-1">
+            @* Header *@
+            <div class="d-flex align-items-center mb-1 flex-wrap">
+                <span class="fw-bold me-2 text-dark">@Model.DisplayName</span>
+                
+                @if (Model.IsPending)
+                {
+                    <span class="badge bg-warning text-dark me-2">
+                        <i class="bi bi-clock me-1"></i>Chờ duyệt
+                    </span>
+                }
+                
+                <small class="text-muted" title="@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")">
+                    @GetRelativeTime(Model.CreatedAt)
+                </small>
+            </div>
+
+            @* Content *@
+            <div class="comment-content text-break mb-2 text-secondary">
+                @Html.Raw(Model.Content)
+            </div>
+
+            @* Actions (Reply button if Level < 3 and LoggedIn) *@
+            @if (isLoggedIn && Model.Level < 3)
+            {
+                <div class="comment-actions">
+                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-muted fw-semibold" 
+                            onclick="toggleReplyForm(@Model.Id)">
+                        <i class="bi bi-reply me-1"></i>Trả lời
+                    </button>
+                </div>
+            }
+
+            @* Inline Reply Form *@
+            @if (isLoggedIn && Model.Level < 3)
+            {
+                <div id="reply-form-container-@Model.Id" class="mt-3 d-none">
+                    <div class="card card-body bg-light border-0 p-3">
+                        <form action="/User/Comment/Create" method="post" class="comment-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="postId" value="@postId" />
+                            <input type="hidden" name="parentCommentId" value="@Model.Id" />
+                            
+                            <div class="mb-2">
+                                <textarea name="content" class="form-control form-control-sm" rows="2" 
+                                          placeholder="Trả lời @Model.DisplayName..." required maxlength="2000"></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleReplyForm(@Model.Id)">
+                                    Hủy
+                                </button>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    Gửi trả lời
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* Nested Replies *@
+    @if (Model.Replies != null && Model.Replies.Any())
+    {
+        <div class="replies-list mt-3">
+            @foreach (var reply in Model.Replies)
+            {
+                @await Html.PartialAsync("_CommentItem", reply, new ViewDataDictionary(ViewData) { { "IsLoggedIn", isLoggedIn }, { "PostId", postId } })
+            }
+        </div>
+    }
+</div>
+
+@functions {
+    public static string GetRelativeTime(DateTime dateTime)
+    {
+        var timeSpan = DateTime.Now - dateTime;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "Vừa xong";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} phút trước";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours} giờ trước";
+        if (timeSpan.TotalDays < 30)
+            return $"{(int)timeSpan.TotalDays} ngày trước";
+        if (timeSpan.TotalDays < 365)
+            return $"{(int)(timeSpan.TotalDays / 30)} tháng trước";
+
+        return dateTime.ToString("dd/MM/yyyy");
+    }
+}
+

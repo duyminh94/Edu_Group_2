@@ -1,3 +1,4 @@
+@using BlogPlatform.ViewModel
 @model PostDetailViewModel
 @*
     Cây bình luận — Issue #7
@@ -5,5 +6,121 @@
     Được gọi từ Areas/User/Views/Blog/Detail.cshtml
 *@
 
-@* TODO: form gửi bình luận (chỉ hiện khi Model.IsLoggedIn = true) *@
-@* TODO: duyệt Model.Comments, mỗi bình luận gọi partial _CommentItem để đệ quy tối đa 3 cấp *@
+<div id="comments-section" class="mt-5 pt-4 border-top">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="h4 mb-0 font-weight-bold">
+            <i class="bi bi-chat-square-text me-2"></i>Bình luận (@(Model.Post?.CommentCount ?? 0))
+        </h3>
+    </div>
+
+    @* Alert Message for AJAX feedback *@
+    <div id="comment-alert" class="alert d-none alert-dismissible fade show" role="alert">
+        <span id="comment-alert-msg"></span>
+        <button type="button" class="btn-close" onclick="this.parentElement.classList.add('d-none')"></button>
+    </div>
+
+    @* Main Comment Form *@
+    @if (Model.IsLoggedIn)
+    {
+        <div class="card mb-4 border-0 shadow-sm bg-light">
+            <div class="card-body p-3 p-md-4">
+                <form id="main-comment-form" action="/User/Comment/Create" method="post" class="comment-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="postId" value="@(Model.Post?.Id ?? 0)" />
+                    <input type="hidden" name="parentCommentId" value="" />
+                    
+                    <div class="mb-3">
+                        <label for="main-comment-content" class="form-label font-weight-bold text-secondary">
+                            Để lại ý kiến của bạn
+                        </label>
+                        <textarea id="main-comment-content" name="content" class="form-control" rows="3" 
+                                  placeholder="Viết bình luận của bạn tại đây..." required maxlength="2000"></textarea>
+                        <div class="form-text text-muted">Cho phép các thẻ định dạng đơn giản: &lt;b&gt;, &lt;i&gt;, &lt;a&gt;, &lt;br&gt;.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-send me-1"></i> Gửi bình luận
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+            <div>
+                Vui lòng <a href="/User/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)" class="alert-link">Đăng nhập</a> để tham gia bình luận.
+            </div>
+        </div>
+    }
+
+    @* Comment List *@
+    <div class="comments-list mt-4">
+        @if (Model.Comments != null && Model.Comments.Any())
+        {
+            foreach (var comment in Model.Comments)
+            {
+                @await Html.PartialAsync("_CommentItem", comment, new ViewDataDictionary(ViewData) { { "IsLoggedIn", Model.IsLoggedIn }, { "PostId", Model.Post?.Id ?? 0 } })
+            }
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted bg-light rounded">
+                <i class="bi bi-chat-dots fs-3 d-block mb-2 text-secondary"></i>
+                <p class="mb-0">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("submit", function (e) {
+            if (e.target && e.target.classList.contains("comment-form")) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const alertBox = document.getElementById("comment-alert");
+                const alertMsg = document.getElementById("comment-alert-msg");
+
+                fetch(form.action, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (alertBox && alertMsg) {
+                        alertBox.className = "alert alert-dismissible fade show " + (data.success ? "alert-success" : "alert-danger");
+                        alertMsg.textContent = data.message;
+                        alertBox.classList.remove("d-none");
+                    }
+                    if (data.success) {
+                        form.reset();
+                        setTimeout(() => location.reload(), 1200);
+                    }
+                })
+                .catch(err => {
+                    if (alertBox && alertMsg) {
+                        alertBox.className = "alert alert-danger alert-dismissible fade show";
+                        alertMsg.textContent = "Đã xảy ra lỗi khi kết nối máy chủ.";
+                        alertBox.classList.remove("d-none");
+                    }
+                });
+            }
+        });
+    });
+
+    function toggleReplyForm(commentId) {
+        const formContainer = document.getElementById('reply-form-container-' + commentId);
+        if (formContainer) {
+            formContainer.classList.toggle('d-none');
+        }
+    }
+</script>
+
