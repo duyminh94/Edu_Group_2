@@ -1,399 +1,49 @@
-using BlogPlatform.Data;
-using BlogPlatform.Models.Enums;
-using BlogPlatform.Services;
-using BlogPlatform.ViewModel;
-using Microsoft.AspNetCore.Mvc;
+using BlogPlatform.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
-namespace BlogPlatform.Areas.User.Controllers
+namespace BlogPlatform.ViewModel
 {
-    // UC01–UC06 — xem danh sách bài, chi tiết bài, tìm kiếm, lọc, trang cá nhân tác giả
-    // Index là trang chủ của website (route mặc định)
-    [Area("User")]
-    public class BlogController : Controller
+    // Từ khoá, bộ lọc, tiêu chí sắp xếp và kết quả tìm kiếm (Issue #10, UC03, UC04)
+    // 👥 Khu B sở hữu
+    //
+    // Class này vừa là ĐẦU VÀO vừa là ĐẦU RA của ISearchService.SearchAsync:
+    // Controller nhận nó từ query string (model binding), truyền xuống Service,
+    // Service điền thêm Results rồi trả về chính nó.
+    //
+    // Nhờ vậy sau khi tìm, ô Search và các dropdown vẫn giữ nguyên giá trị vừa chọn
+    // (quy tắc 6.7) — đúng cách StudentViewModel giữ lại Filter ở CoreFirstDay03.
+    public class SearchViewModel
     {
-        private readonly BlogDbContext _context;
-        private readonly IAnalyticsService _analyticsService;
+        // ===== Điều kiện lọc — người dùng nhập, khớp tên với query string =====
+        // /User/Blog/Search?Keyword=aspnet&CategorySlug=lap-trinh&SortBy=views
 
-        public BlogController(BlogDbContext context, IAnalyticsService analyticsService)
-        {
-            _context = context;
-            _analyticsService = analyticsService;
-        }
+        // Quy tắc 6.8 — để trống thì trả danh sách mới nhất, không báo lỗi
+        // Quy tắc 6.9 — dưới 2 ký tự thì không tìm, tránh quét toàn bảng
+        public string? Keyword { get; set; }
 
-        // ===== UC01: Trang chủ - Danh sách bài viết mới nhất =====
-        public async Task<IActionResult> Index(int page = 1)
-        {
-            int pageSize = 10;
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.Status == PostStatus.Published);
+        public string? CategorySlug { get; set; }
+        public string? TagSlug { get; set; }
+        public string? AuthorUserName { get; set; }
 
-            int totalPosts = await query.CountAsync();
+        // Quy tắc 6.5 — nhận "newest" (mặc định) / "views" / "likes"
+        public string SortBy { get; set; } = "newest";
 
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = p.AuthorId,
-                    AuthorUserName = p.Author!.UserName,
-                    AuthorDisplayName = p.Author.DisplayName,
-                    CategoryName = p.Category != null ? p.Category.Name : null,
-                    CategorySlug = p.Category != null ? p.Category.Slug : null,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
 
-            var viewModel = new PostListViewModel
-            {
-                Posts = posts,
-                Page = page,
-                PageSize = pageSize,
-                TotalPosts = totalPosts,
-                PageTitle = "Bài viết mới nhất",
-                Categories = await _context.Categories.AsNoTracking().ToListAsync(),
-                Tags = await _context.Tags.AsNoTracking().ToListAsync()
-            };
+        // ===== Kết quả — Service điền vào, người dùng không nhập =====
+        public List<PostListItemViewModel> Results { get; set; } = new();
 
-            return View(viewModel);
-        }
+        public int TotalCount { get; set; }
 
-        // ===== Lọc theo Chuyên mục =====
-        public async Task<IActionResult> Category(string slug, int page = 1)
-        {
-            if (string.IsNullOrEmpty(slug)) return NotFound();
+        public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
 
-            var category = await _context.Categories.FirstOrDefaultAsync(c => c.Slug == slug);
-            if (category == null) return NotFound();
+        // Đã bấm tìm hay chưa — dùng để phân biệt "mới vào trang" với
+        // "đã tìm nhưng không ra kết quả" (quy tắc 6.10)
+        public bool HasSearched { get; set; }
 
-            int pageSize = 10;
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.CategoryId == category.Id && p.Status == PostStatus.Published);
-
-            int totalPosts = await query.CountAsync();
-
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = p.AuthorId,
-                    AuthorUserName = p.Author!.UserName,
-                    AuthorDisplayName = p.Author.DisplayName,
-                    CategoryName = category.Name,
-                    CategorySlug = category.Slug,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
-
-            var viewModel = new PostListViewModel
-            {
-                Posts = posts,
-                Page = page,
-                PageSize = pageSize,
-                TotalPosts = totalPosts,
-                PageTitle = $"Chuyên mục: {category.Name}",
-                CategorySlug = slug,
-                Categories = await _context.Categories.AsNoTracking().ToListAsync(),
-                Tags = await _context.Tags.AsNoTracking().ToListAsync()
-            };
-
-            return View("Index", viewModel);
-        }
-
-        // ===== Lọc theo Thẻ =====
-        public async Task<IActionResult> Tag(string slug, int page = 1)
-        {
-            if (string.IsNullOrEmpty(slug)) return NotFound();
-
-            var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Slug == slug);
-            if (tag == null) return NotFound();
-
-            int pageSize = 10;
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.PostTags.Any(pt => pt.TagId == tag.Id) && p.Status == PostStatus.Published);
-
-            int totalPosts = await query.CountAsync();
-
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = p.AuthorId,
-                    AuthorUserName = p.Author!.UserName,
-                    AuthorDisplayName = p.Author.DisplayName,
-                    CategoryName = p.Category != null ? p.Category.Name : null,
-                    CategorySlug = p.Category != null ? p.Category.Slug : null,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
-
-            var viewModel = new PostListViewModel
-            {
-                Posts = posts,
-                Page = page,
-                PageSize = pageSize,
-                TotalPosts = totalPosts,
-                PageTitle = $"Thẻ: #{tag.Name}",
-                TagSlug = slug,
-                Categories = await _context.Categories.AsNoTracking().ToListAsync(),
-                Tags = await _context.Tags.AsNoTracking().ToListAsync()
-            };
-
-            return View("Index", viewModel);
-        }
-
-        // ===== UC03, UC04: Tìm kiếm & Lọc bài viết (Issue #10) =====
-        public async Task<IActionResult> Search([FromQuery] SearchViewModel model)
-        {
-            // Bắt đầu truy vấn chỉ trên bài viết Published
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.Status == PostStatus.Published);
-
-            // Kiểm tra xem người dùng có thực hiện tìm kiếm/lọc hay không
-            bool isSearching = !string.IsNullOrWhiteSpace(model.Keyword)
-                || !string.IsNullOrEmpty(model.CategorySlug)
-                || !string.IsNullOrEmpty(model.TagSlug)
-                || !string.IsNullOrEmpty(model.AuthorUserName);
-
-            model.HasSearched = isSearching;
-
-            // Quy tắc 6.9: Nếu có nhập keyword nhưng dưới 2 ký tự -> Không thực hiện truy vấn keyword
-            if (!string.IsNullOrWhiteSpace(model.Keyword) && model.Keyword.Trim().Length >= 2)
-            {
-                string kw = model.Keyword.Trim();
-                query = query.Where(p => p.Title.Contains(kw) || (p.Summary != null && p.Summary.Contains(kw)));
-            }
-
-            // Lọc theo Chuyên mục
-            if (!string.IsNullOrEmpty(model.CategorySlug))
-            {
-                query = query.Where(p => p.Category != null && p.Category.Slug == model.CategorySlug);
-            }
-
-            // Lọc theo Thẻ
-            if (!string.IsNullOrEmpty(model.TagSlug))
-            {
-                query = query.Where(p => p.PostTags.Any(pt => pt.Tag.Slug == model.TagSlug));
-            }
-
-            // Lọc theo Tác giả
-            if (!string.IsNullOrEmpty(model.AuthorUserName))
-            {
-                query = query.Where(p => p.Author != null && p.Author.UserName == model.AuthorUserName);
-            }
-
-            // Quy tắc 6.5: Sắp xếp kết quả ("newest" / "views" / "likes")
-            query = model.SortBy?.ToLower() switch
-            {
-                "views" => query.OrderByDescending(p => p.ViewCount),
-                "likes" => query.OrderByDescending(p => p.LikeCount),
-                _ => query.OrderByDescending(p => p.PublishedAt)
-            };
-
-            model.TotalCount = await query.CountAsync();
-
-            model.Results = await query
-                .Skip((model.Page - 1) * model.PageSize)
-                .Take(model.PageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = p.AuthorId,
-                    AuthorUserName = p.Author!.UserName,
-                    AuthorDisplayName = p.Author.DisplayName,
-                    CategoryName = p.Category != null ? p.Category.Name : null,
-                    CategorySlug = p.Category != null ? p.Category.Slug : null,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
-
-            // Đổ dữ liệu vào SelectList và List<Tag> cho bộ lọc UI
-            var categories = await _context.Categories.AsNoTracking().ToListAsync();
-            model.CategoryOptions = new SelectList(categories, "Slug", "Name", model.CategorySlug);
-            model.AvailableTags = await _context.Tags.AsNoTracking().ToListAsync();
-
-            return View(model);
-        }
-
-        // ===== UC02: Xem chi tiết bài viết =====
-        public async Task<IActionResult> Detail(string slug)
-        {
-            if (string.IsNullOrEmpty(slug)) return NotFound();
-
-            var post = await _context.Posts
-                .AsNoTracking()
-                .Include(p => p.Author)
-                    .ThenInclude(a => a!.BlogSetting)
-                .Include(p => p.Category)
-                .Include(p => p.PostTags)
-                    .ThenInclude(pt => pt.Tag)
-                .FirstOrDefaultAsync(p => p.Slug == slug && p.Status == PostStatus.Published);
-
-            if (post == null) return NotFound();
-
-            // Đọc cấu hình giao diện blog của tác giả
-            if (post.Author?.BlogSetting != null)
-            {
-                ViewBag.BlogTheme = post.Author.BlogSetting.ThemeName;
-                ViewBag.BlogPrimaryColor = post.Author.BlogSetting.PrimaryColor;
-                ViewBag.BlogFontFamily = post.Author.BlogSetting.FontFamily;
-                ViewBag.BlogLogoUrl = post.Author.BlogSetting.LogoUrl;
-                ViewBag.BlogTagline = post.Author.BlogSetting.Tagline;
-            }
-
-            await _analyticsService.RecordViewAsync(post.Id, HttpContext);
-
-            var viewModel = new PostDetailViewModel
-            {
-                Id = post.Id,
-                Title = post.Title,
-                Slug = post.Slug,
-                Content = post.Content,
-                Summary = post.Summary,
-                FeaturedImageUrl = post.FeaturedImageUrl,
-                PublishedAt = post.PublishedAt,
-                AuthorId = post.AuthorId,
-                AuthorDisplayName = post.Author!.DisplayName,
-                AuthorUserName = post.Author.UserName,
-                AuthorAvatarUrl = post.Author.AvatarUrl,
-                AuthorBio = post.Author.Bio,
-                CategoryName = post.Category?.Name,
-                CategorySlug = post.Category?.Slug,
-                Tags = post.PostTags.Select(pt => new TagViewModel
-                {
-                    Name = pt.Tag.Name,
-                    Slug = pt.Tag.Slug
-                }).ToList(),
-                ViewCount = post.ViewCount,
-                LikeCount = post.LikeCount,
-                CommentCount = post.CommentCount
-            };
-
-            return View(viewModel);
-        }
-
-        // ===== UC06: Trang tác giả =====
-        public async Task<IActionResult> Author(string username, int page = 1)
-        {
-            if (string.IsNullOrEmpty(username)) return NotFound();
-
-            var author = await _context.Users
-                .AsNoTracking()
-                .Include(u => u.BlogSetting)
-                .FirstOrDefaultAsync(u => u.UserName == username);
-
-            if (author == null) return NotFound();
-
-            if (author.BlogSetting != null)
-            {
-                ViewBag.BlogTheme = author.BlogSetting.ThemeName;
-                ViewBag.BlogPrimaryColor = author.BlogSetting.PrimaryColor;
-                ViewBag.BlogFontFamily = author.BlogSetting.FontFamily;
-                ViewBag.BlogLogoUrl = author.BlogSetting.LogoUrl;
-                ViewBag.BlogTagline = author.BlogSetting.Tagline;
-            }
-
-            int pageSize = 10;
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.AuthorId == author.Id && p.Status == PostStatus.Published);
-
-            int totalPosts = await query.CountAsync();
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = author.Id,
-                    AuthorUserName = author.UserName,
-                    AuthorDisplayName = author.DisplayName,
-                    CategoryName = p.Category != null ? p.Category.Name : null,
-                    CategorySlug = p.Category != null ? p.Category.Slug : null,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
-
-            var viewModel = new AuthorProfileViewModel
-            {
-                AuthorId = author.Id,
-                UserName = author.UserName,
-                DisplayName = author.DisplayName,
-                AvatarUrl = author.AvatarUrl,
-                Bio = author.Bio,
-                Posts = new PostListViewModel
-                {
-                    Posts = posts,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalPosts = totalPosts,
-                    PageTitle = $"Bài viết của {author.DisplayName}"
-                }
-            };
-
-            return View("~/Areas/User/Views/Profile/Author.cshtml", viewModel);
-        }
-
-        // ===== Action Error () =====
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error(int? code)
-        {
-            ViewBag.StatusCode = code ?? 500;
-            return View("~/Views/Shared/Error.cshtml");
-        }
+        // ===== Dữ liệu đổ dropdown bộ lọc, Controller gán trước khi return View =====
+        public SelectList? CategoryOptions { get; set; }
+        public List<Tag> AvailableTags { get; set; } = new();
     }
 }
