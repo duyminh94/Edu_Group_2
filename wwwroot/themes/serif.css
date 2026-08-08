@@ -1,1 +1,11 @@
 /* Theme preset: serif */
+:root {
+    --font-family: 'Merriweather', 'Georgia', serif;
+    --bg-color: #fbf9f5;
+    --card-bg: #ffffff;
+    --text-color: #292524;
+    --text-muted: #78716c;
+    --border-color: #e7e5e4;
+    --nav-bg: #f5f2eb;
+    --footer-bg: #f5f2eb;
+}

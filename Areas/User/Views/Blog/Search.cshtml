@@ -1,5 +1,115 @@
+@model BlogPlatform.ViewModel.SearchViewModel
 @{
-    ViewData["Title"] = "Tìm kiếm";
+    ViewData["Title"] = "Tìm kiếm bài viết";
 }
 
-@* TODO: ô tìm kiếm, bộ lọc và kết quả (UC03, UC04) *@
+<div class="container my-4">
+    <h2 class="mb-4">Tìm kiếm & Lọc bài viết</h2>
+
+    <!-- Form Tìm kiếm & Lọc -->
+    <form method="get" asp-area="User" asp-controller="Blog" asp-action="Search" class="card card-body bg-light mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label font-weight-bold">Từ khoá</label>
+                <input type="text" name="Keyword" value="@Model.Keyword" class="form-control" placeholder="Nhập từ khoá (ít nhất 2 ký tự)..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label font-weight-bold">Chuyên mục</label>
+                <select name="CategorySlug" asp-items="Model.CategoryOptions" class="form-select form-control">
+                    <option value="">-- Tất cả chuyên mục --</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label font-weight-bold">Sắp xếp theo</label>
+                <select name="SortBy" class="form-select form-control">
+                    <option value="newest" selected="@(Model.SortBy == "newest")">Mới nhất</option>
+                    <option value="views" selected="@(Model.SortBy == "views")">Xem nhiều nhất</option>
+                    <option value="likes" selected="@(Model.SortBy == "likes")">Nhiều lượt thích nhất</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+            </div>
+        </div>
+
+        @if (Model.AvailableTags != null && Model.AvailableTags.Any())
+        {
+            <div class="mt-3">
+                <small class="font-weight-bold text-muted">Lọc theo Thẻ:</small>
+                <input type="hidden" name="TagSlug" id="selectedTagSlug" value="@Model.TagSlug" />
+                <div class="d-flex flex-wrap gap-1 mt-1">
+                    @foreach (var tag in Model.AvailableTags)
+                    {
+                        <a href="javascript:void(0)" 
+                           onclick="document.getElementById('selectedTagSlug').value='@(Model.TagSlug == tag.Slug ? "" : tag.Slug)'; this.closest('form').submit();"
+                           class="badge @(Model.TagSlug == tag.Slug ? "bg-primary text-white" : "bg-secondary text-white") p-2 text-decoration-none">
+                            #@tag.Name
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    </form>
+
+    <!-- Kết quả tìm kiếm -->
+    @if (Model.HasSearched && !Model.Results.Any())
+    {
+        <div class="alert alert-warning text-center py-4" role="alert">
+            <h4>Không tìm thấy bài viết nào!</h4>
+            <p class="mb-0">Hãy thử lại với từ khoá hoặc bộ lọc khác.</p>
+        </div>
+    }
+    else if (Model.Results.Any())
+    {
+        <p class="text-muted">Tìm thấy <strong>@Model.TotalCount</strong> bài viết phù hợp.</p>
+        <div class="row">
+            @foreach (var post in Model.Results)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        @if (!string.IsNullOrEmpty(post.FeaturedImageUrl))
+                        {
+                            <img src="@post.FeaturedImageUrl" class="card-img-top" alt="@post.Title" style="height: 180px; object-fit: cover;">
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a asp-area="User" asp-controller="Blog" asp-action="Detail" asp-route-slug="@post.Slug">@post.Title</a>
+                            </h5>
+                            <p class="card-text text-muted small">
+                                Tác giả: @post.AuthorDisplayName | Đăng ngày: @post.PublishedAt?.ToString("dd/MM/yyyy")
+                            </p>
+                            <p class="card-text">@post.Summary</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 d-flex justify-content-between text-muted small">
+                            <span>👁 @post.ViewCount</span>
+                            <span>❤️ @post.LikeCount</span>
+                            <span>💬 @post.CommentCount</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Phân trang - Giữ nguyên tham số lọc -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="d-flex justify-content-center mt-4">
+                <ul class="pagination">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                            <a class="page-page-link btn btn-outline-primary mx-1 @(i == Model.Page ? "active" : "")"
+                               asp-area="User" asp-controller="Blog" asp-action="Search"
+                               asp-route-Keyword="@Model.Keyword"
+                               asp-route-CategorySlug="@Model.CategorySlug"
+                               asp-route-TagSlug="@Model.TagSlug"
+                               asp-route-AuthorUserName="@Model.AuthorUserName"
+                               asp-route-SortBy="@Model.SortBy"
+                               asp-route-Page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</div>
