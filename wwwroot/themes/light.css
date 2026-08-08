@@ -1,1 +1,10 @@
 /* Theme preset: light */
+:root {
+    --bg-color: #ffffff;
+    --card-bg: #ffffff;
+    --text-color: #0f172a;
+    --text-muted: #475569;
+    --border-color: #e2e8f0;
+    --nav-bg: #ffffff;
+    --footer-bg: #f8fafc;
+}

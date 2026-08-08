@@ -4,25 +4,67 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BlogPlatform</title>
+    
+    <!-- Base CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    @* TODO (Khu B): chèn CSS variables theo BlogSetting của tác giả đang xem *@
+
+    @{
+        // Đọc thông tin theme từ ViewBag (do Controller gán) hoặc dùng mặc định
+        string currentTheme = ViewBag.BlogTheme ?? "light";
+        string primaryColor = ViewBag.BlogPrimaryColor ?? "#2563eb";
+        string fontFamily = ViewBag.BlogFontFamily ?? "Be Vietnam Pro";
+    }
+
+    <!-- Theme Preset CSS -->
+    <link rel="stylesheet" href="~/themes/@(currentTheme).css" asp-append-version="true" />
+
+    <!-- Override CSS Variables từ BlogSetting của tác giả -->
+    <style>
+        :root {
+            --primary-color: @primaryColor !important;
+            --font-family: '@fontFamily', system-ui, -apple-system, sans-serif !important;
+        }
+    </style>
+    
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     @*
         KHU B (Người 2) sở hữu file này — Issue #2
         Menu tài khoản tách ra partial riêng do Khu A sở hữu, để 2 người không sửa cùng file.
     *@
-    <header>
-        @* TODO (Khu B): logo và ô tìm kiếm *@
-        @await Html.PartialAsync("_AccountMenu")
+    <header class="app-header">
+        <div class="navbar-container">
+            <!-- Logo & Title -->
+            <a class="brand-logo" asp-area="User" asp-controller="Blog" asp-action="Index">
+                @if (ViewBag.BlogLogoUrl != null)
+                {
+                    <img src="@ViewBag.BlogLogoUrl" alt="Logo" />
+                }
+                else
+                {
+                    <span>BlogPlatform</span>
+                }
+            </a>
+
+            <!-- Ô tìm kiếm -->
+            <form class="search-form" asp-area="User" asp-controller="Blog" asp-action="Search" method="get">
+                <input type="search" name="q" class="search-input" placeholder="Tìm kiếm bài viết..." aria-label="Tìm kiếm" value="@Context.Request.Query["q"]" />
+            </form>
+
+            <!-- Menu tài khoản (Partial của Khu A) -->
+            @await Html.PartialAsync("_AccountMenu")
+        </div>
     </header>
 
-    <main>
+    <main class="app-main">
         @RenderBody()
     </main>
 
-    <footer>
-        <p>&copy; 2026 - BlogPlatform</p>
+    <footer class="app-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 - BlogPlatform. @(ViewBag.BlogTagline ?? "Nền tảng chia sẻ tri thức.")</p>
+        </div>
     </footer>
 
     @* jQuery dùng chung cho AJAX (Issue #9) và validation form (Issue #3) — dùng CDN *@
