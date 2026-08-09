@@ -18,34 +18,51 @@ namespace BlogPlatform.Filters
         //   2. Đã đăng nhập nhưng role không nằm trong Roles → trả về 403 Forbidden
         //   3. Hợp lệ → cho request đi tiếp
         public override void OnActionExecuting(ActionExecutingContext context)
+{
+    var session = context.HttpContext.Session;
+
+    var userId = session.GetInt32(SessionKeys.UserId);
+    var roleName = session.GetString(SessionKeys.RoleName);
+
+    // 1. Chưa đăng nhập
+    if (userId == null)
+    {
+        var returnUrl =
+            context.HttpContext.Request.Path +
+            context.HttpContext.Request.QueryString;
+
+        context.Result = new RedirectToActionResult(
+            "Login",
+            "Account",
+            new
+            {
+                area = "User",
+                returnUrl = returnUrl
+            });
+
+        return;
+    }
+
+    // 2. Đã đăng nhập nhưng không đúng Role
+    if (!string.IsNullOrEmpty(Roles))
+    {
+        var allowedRoles = Roles.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries |
+            StringSplitOptions.TrimEntries);
+
+        if (string.IsNullOrEmpty(roleName) ||
+            !allowedRoles.Contains(
+                roleName,
+                StringComparer.OrdinalIgnoreCase))
         {
-            var session = context.HttpContext.Session;
-            var userId = session.GetInt32(SessionKeys.UserId);
-            var roleName = session.GetString(SessionKeys.RoleName);
-
-            //  1. Chưa đăng nhập -> Chuyển hướng về trang Login kèm returnUrl
-
-            if(userId == null)
-            {
-                var returnUrl = context.HttpContext.Request.Path + context.HttpContext.Request.QueryString;
-                context.Result = new RedirectToActionResult("Login", "Account", new { areas  = "Users" , returnUrl });
-                return;
-            }
-
-            // 2. Đã đăng nhập -> Kiểm tra Role nếu thuộc tính Roles có khai báo
-            if (!string.IsNullOrEmpty(Roles))
-            {
-                var allowedRoles = Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                if(string.IsNullOrEmpty(roleName) || !allowedRoles.Contains(roleName , StringComparer.OrdinalIgnoreCase))
-                {
-                    context.Result = new StatusCodeResult(403);
-                    return;
-                }
-
-                base.OnActionExecuting(context);
-            }
-   
+            context.Result = new StatusCodeResult(403);
+            return;
         }
+    }
 
+    // 3. Hợp lệ -> cho request tiếp tục
+    base.OnActionExecuting(context);
+}
     }
 }

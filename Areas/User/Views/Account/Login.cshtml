@@ -1,5 +1,91 @@
+@model BlogPlatform.ViewModel.LoginViewModel
+
 @{
     ViewData["Title"] = "Đăng nhập";
 }
 
-@* TODO: form đăng nhập (UC08) *@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <h2 class="text-center mb-4">
+                        Đăng nhập
+                    </h2>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">
+                            @TempData["SuccessMessage"]
+                        </div>
+                    }
+
+                    <form asp-area="User"
+                          asp-controller="Account"
+                          asp-action="Login"
+                          method="post">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger mb-3">
+                        </div>
+
+                        <input asp-for="ReturnUrl"
+                               type="hidden" />
+
+                        <div class="mb-3">
+                            <label asp-for="UserName"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="UserName"
+                                   class="form-control"
+                                   placeholder="Nhập tên đăng nhập" />
+
+                            <span asp-validation-for="UserName"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="Password"
+                                   class="form-control"
+                                   placeholder="Nhập mật khẩu" />
+
+                            <span asp-validation-for="Password"
+                                  class="text-danger">
+                            </span>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary w-100">
+                            Đăng nhập
+                        </button>
+
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <span>Chưa có tài khoản?</span>
+
+                        <a asp-area="User"
+                           asp-controller="Account"
+                           asp-action="Register">
+                            Đăng ký
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

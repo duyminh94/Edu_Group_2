@@ -30,7 +30,27 @@ namespace BlogPlatform.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
+            // ===== Seed dữ liệu Role =====
+builder.Entity<Role>().HasData(
+    new Role
+    {
+        Id = 1,
+        Name = "Admin",
+        Description = "Quản trị viên hệ thống"
+    },
+    new Role
+    {
+        Id = 2,
+        Name = "Author",
+        Description = "Tác giả bài viết"
+    },
+    new Role
+    {
+        Id = 3,
+        Name = "Reader",
+        Description = "Người đọc"
+    }
+);
             // ===== Role → User =====
             // Không cho xoá vai trò khi vẫn còn người dùng đang giữ vai trò đó
             builder.Entity<User>()
