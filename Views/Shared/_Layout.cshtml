@@ -4,25 +4,44 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BlogPlatform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @* TODO (Khu B): chèn CSS variables theo BlogSetting của tác giả đang xem *@
 </head>
 <body>
-    @*
-        KHU B (Người 2) sở hữu file này — Issue #2
-        Menu tài khoản tách ra partial riêng do Khu A sở hữu, để 2 người không sửa cùng file.
-    *@
-    <header>
-        @* TODO (Khu B): logo và ô tìm kiếm *@
-        @await Html.PartialAsync("_AccountMenu")
+    <header class="site-header">
+        <div class="container header-row">
+            <a href="/" class="brand" aria-label="Trang chủ BlogPlatform">
+                <span class="brand-mark">B</span>
+                <span>BlogPlatform</span>
+            </a>
+
+            <nav class="main-nav" aria-label="Điều hướng chính">
+                <a href="/">Trang chủ</a>
+                <a href="/">Bài viết</a>
+                <a href="/">Khám phá</a>
+                <a href="/">Liên hệ</a>
+            </nav>
+
+            <div class="header-actions">
+                @await Html.PartialAsync("_AccountMenu")
+            </div>
+        </div>
     </header>
 
-    <main>
-        @RenderBody()
+    <main class="page-main">
+        <div class="container">
+            @RenderBody()
+        </div>
     </main>
 
-    <footer>
-        <p>&copy; 2026 - BlogPlatform</p>
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>&copy; 2026 - BlogPlatform</p>
+            <span>Viết, chia sẻ và kết nối</span>
+        </div>
     </footer>
 
     @* jQuery dùng chung cho AJAX (Issue #9) và validation form (Issue #3) — dùng CDN *@

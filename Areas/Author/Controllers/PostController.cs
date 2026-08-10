@@ -14,37 +14,56 @@ namespace BlogPlatform.Areas.Author.Controllers
     {
         private readonly IPostService _postService;
         private readonly ITaxonomyService _taxonomyService;
+        private readonly IMediaService _mediaService;
 
         public PostController(
             IPostService postService,
-            ITaxonomyService taxonomyService)
+            ITaxonomyService taxonomyService,
+            IMediaService mediaService)
         {
             _postService = postService;
             _taxonomyService = taxonomyService;
+            _mediaService = mediaService;
         }
 
-        // Danh sách bài viết của tác giả
-        // GET: /Author/Post
+        // =====================================================
+        // DANH SÁCH BÀI VIẾT
+        // =====================================================
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            Console.WriteLine("======================================");
+            Console.WriteLine("AUTHOR POST INDEX START");
+
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
+
+            Console.WriteLine($"AUTHOR ID = {authorId}");
 
             if (authorId == null)
             {
+                Console.WriteLine("AUTHOR ID NULL");
+
                 return RedirectToAction(
                     "Login",
                     "Account",
                     new { area = "User" });
             }
 
-            var posts = await _postService.GetByAuthorAsync(authorId.Value);
+            var posts =
+                await _postService.GetByAuthorAsync(authorId.Value);
+
+            Console.WriteLine($"POST COUNT = {posts.Count}");
+
+            Console.WriteLine("AUTHOR POST INDEX END");
+            Console.WriteLine("======================================");
 
             return View(posts);
         }
 
-        // Hiển thị form tạo bài
-        // GET: /Author/Post/Create
+        // =====================================================
+        // HIỂN THỊ FORM TẠO BÀI
+        // =====================================================
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -55,19 +74,16 @@ namespace BlogPlatform.Areas.Author.Controllers
             return View(model);
         }
 
-        // Xử lý tạo bài
-        // POST: /Author/Post/Create
+        // =====================================================
+        // XỬ LÝ TẠO BÀI
+        // =====================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(PostEditViewModel model)
+        public async Task<IActionResult> Create(
+            PostEditViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                await LoadCategoriesAsync(model);
-                return View(model);
-            }
-
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -77,19 +93,60 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            await _postService.CreateAsync(model, authorId.Value);
+            // Upload ảnh nếu có
+            if (model.ImageFile != null &&
+                model.ImageFile.Length > 0)
+            {
+                try
+                {
+                    var imageUrl =
+                        await _mediaService.UploadAsync(
+                            model.ImageFile,
+                            authorId.Value);
 
-            TempData["SuccessMessage"] = "Tạo bài viết thành công.";
+                    model.FeaturedImageUrl = imageUrl;
+                }
+                catch (ArgumentException ex)
+                {
+                    ModelState.AddModelError(
+                        "ImageFile",
+                        ex.Message);
+                }
+                catch (Exception)
+                {
+                    ModelState.AddModelError(
+                        "ImageFile",
+                        "Không thể upload ảnh.");
+                }
+            }
+
+            // Model không hợp lệ
+            if (!ModelState.IsValid)
+            {
+                await LoadCategoriesAsync(model);
+
+                return View(model);
+            }
+
+            // Tạo bài viết
+            await _postService.CreateAsync(
+                model,
+                authorId.Value);
+
+            TempData["SuccessMessage"] =
+                "Tạo bài viết thành công.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        // Hiển thị form sửa
-        // GET: /Author/Post/Edit/5
+        // =====================================================
+        // HIỂN THỊ FORM SỬA
+        // =====================================================
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -99,14 +156,15 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            var post = await _postService.GetByIdAsync(id);
+            var post =
+                await _postService.GetByIdAsync(id);
 
             if (post == null)
             {
                 return NotFound();
             }
 
-            // UC21 — chỉ chủ bài viết mới được sửa
+            // Chỉ chủ bài viết mới được sửa
             if (post.AuthorId != authorId.Value)
             {
                 return Forbid();
@@ -122,6 +180,7 @@ namespace BlogPlatform.Areas.Author.Controllers
                 CategoryId = post.CategoryId,
                 Status = post.Status,
                 Slug = post.Slug,
+
                 TagNames = string.Join(
                     ", ",
                     post.PostTags
@@ -134,19 +193,16 @@ namespace BlogPlatform.Areas.Author.Controllers
             return View(model);
         }
 
-        // Xử lý sửa
-        // POST: /Author/Post/Edit
+        // =====================================================
+        // XỬ LÝ SỬA
+        // =====================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(PostEditViewModel model)
+        public async Task<IActionResult> Edit(
+            PostEditViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                await LoadCategoriesAsync(model);
-                return View(model);
-            }
-
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -156,27 +212,82 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            var success = await _postService.UpdateAsync(
-                model,
-                authorId.Value);
+            var post =
+                await _postService.GetByIdAsync(model.Id);
+
+            if (post == null)
+            {
+                return NotFound();
+            }
+
+            if (post.AuthorId != authorId.Value)
+            {
+                return Forbid();
+            }
+
+            // Giữ ảnh cũ
+            model.FeaturedImageUrl =
+                post.FeaturedImageUrl;
+
+            // Nếu chọn ảnh mới
+            if (model.ImageFile != null &&
+                model.ImageFile.Length > 0)
+            {
+                try
+                {
+                    var imageUrl =
+                        await _mediaService.UploadAsync(
+                            model.ImageFile,
+                            authorId.Value);
+
+                    model.FeaturedImageUrl = imageUrl;
+                }
+                catch (ArgumentException ex)
+                {
+                    ModelState.AddModelError(
+                        "ImageFile",
+                        ex.Message);
+                }
+                catch (Exception)
+                {
+                    ModelState.AddModelError(
+                        "ImageFile",
+                        "Không thể upload ảnh.");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await LoadCategoriesAsync(model);
+
+                return View(model);
+            }
+
+            var success =
+                await _postService.UpdateAsync(
+                    model,
+                    authorId.Value);
 
             if (!success)
             {
                 return Forbid();
             }
 
-            TempData["SuccessMessage"] = "Cập nhật bài viết thành công.";
+            TempData["SuccessMessage"] =
+                "Cập nhật bài viết thành công.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        // Xóa bài viết
-        // POST: /Author/Post/Delete/5
+        // =====================================================
+        // XÓA BÀI
+        // =====================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -186,27 +297,31 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            var success = await _postService.DeleteAsync(
-                id,
-                authorId.Value);
+            var success =
+                await _postService.DeleteAsync(
+                    id,
+                    authorId.Value);
 
             if (!success)
             {
                 return Forbid();
             }
 
-            TempData["SuccessMessage"] = "Xóa bài viết thành công.";
+            TempData["SuccessMessage"] =
+                "Xóa bài viết thành công.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        // Publish bài viết
-        // POST: /Author/Post/Publish/5
+        // =====================================================
+        // PUBLISH
+        // =====================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Publish(int id)
         {
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -216,27 +331,31 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            var success = await _postService.PublishAsync(
-                id,
-                authorId.Value);
+            var success =
+                await _postService.PublishAsync(
+                    id,
+                    authorId.Value);
 
             if (!success)
             {
                 return Forbid();
             }
 
-            TempData["SuccessMessage"] = "Đăng bài thành công.";
+            TempData["SuccessMessage"] =
+                "Đăng bài thành công.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        // Unpublish bài viết
-        // POST: /Author/Post/Unpublish/5
+        // =====================================================
+        // UNPUBLISH
+        // =====================================================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unpublish(int id)
         {
-            var authorId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var authorId =
+                HttpContext.Session.GetInt32(SessionKeys.UserId);
 
             if (authorId == null)
             {
@@ -246,31 +365,38 @@ namespace BlogPlatform.Areas.Author.Controllers
                     new { area = "User" });
             }
 
-            var success = await _postService.UnpublishAsync(
-                id,
-                authorId.Value);
+            var success =
+                await _postService.UnpublishAsync(
+                    id,
+                    authorId.Value);
 
             if (!success)
             {
                 return Forbid();
             }
 
-            TempData["SuccessMessage"] = "Đã chuyển bài viết về bản nháp.";
+            TempData["SuccessMessage"] =
+                "Đã chuyển bài viết về bản nháp.";
 
             return RedirectToAction(nameof(Index));
         }
 
-        // Đổ danh sách Category cho dropdown
-        private async Task LoadCategoriesAsync(PostEditViewModel model)
+        // =====================================================
+        // LOAD CATEGORY
+        // =====================================================
+        private async Task LoadCategoriesAsync(
+            PostEditViewModel model)
         {
             var categories =
-                await _taxonomyService.GetAllCategoriesAsync();
+                await _taxonomyService
+                    .GetAllCategoriesAsync();
 
-            model.Categories = new SelectList(
-                categories,
-                "Id",
-                "Name",
-                model.CategoryId);
+            model.Categories =
+                new SelectList(
+                    categories,
+                    "Id",
+                    "Name",
+                    model.CategoryId);
         }
     }
 }

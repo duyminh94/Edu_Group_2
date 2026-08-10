@@ -1,22 +1,38 @@
 @model List<BlogPlatform.Models.Post>
 
 @{
-    ViewData["Title"] = "Trang chủ";
+    ViewData["Title"] = "Chuyên mục";
+
+    var category = ViewBag.Category as BlogPlatform.Models.Category;
 }
 
 <div class="container py-4">
 
+    <!-- TIÊU ĐỀ -->
+
     <div class="mb-4">
-        <h1 class="fw-bold">Bài viết mới nhất</h1>
-        <p class="text-muted">
-            Khám phá những bài viết mới nhất từ cộng đồng.
-        </p>
+
+        <a asp-area="User"
+           asp-controller="Blog"
+           asp-action="Index"
+           class="text-decoration-none">
+
+            ← Trang chủ
+
+        </a>
+
+        <h2 class="fw-bold mt-3">
+            Chuyên mục:
+            @(category?.Name ?? "Không xác định")
+        </h2>
+
     </div>
+
 
     @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info">
-            Hiện chưa có bài viết nào được đăng.
+            Chưa có bài viết nào trong chuyên mục này.
         </div>
     }
     else
@@ -29,24 +45,23 @@
 
                     <div class="card h-100 shadow-sm">
 
-                        <!-- ============================= -->
-                        <!-- ẢNH ĐẠI DIỆN -->
-                        <!-- ============================= -->
+                        <!-- ẢNH -->
 
-                        @if (!string.IsNullOrWhiteSpace(post.FeaturedImageUrl))
+                        @if (!string.IsNullOrWhiteSpace(
+                            post.FeaturedImageUrl))
                         {
                             <img src="@post.FeaturedImageUrl"
-                                 class="card-img-top"
                                  alt="@post.Title"
+                                 class="card-img-top"
                                  style="
-                                    height:220px;
+                                    height:200px;
                                     object-fit:cover;
                                  " />
                         }
                         else
                         {
                             <div class="d-flex align-items-center justify-content-center bg-light"
-                                 style="height:220px;">
+                                 style="height:200px;">
 
                                 <span class="text-muted">
                                     Không có ảnh
@@ -56,27 +71,9 @@
                         }
 
 
-                        <!-- ============================= -->
-                        <!-- NỘI DUNG CARD -->
-                        <!-- ============================= -->
+                        <!-- NỘI DUNG -->
 
                         <div class="card-body d-flex flex-column">
-
-                            <!-- CATEGORY -->
-
-                            @if (post.Category != null)
-                            {
-                                <div class="mb-2">
-
-                                    <span class="badge bg-primary">
-                                        @post.Category.Name
-                                    </span>
-
-                                </div>
-                            }
-
-
-                            <!-- TITLE -->
 
                             <h4 class="card-title">
 
@@ -93,8 +90,6 @@
                             </h4>
 
 
-                            <!-- SUMMARY -->
-
                             @if (!string.IsNullOrWhiteSpace(post.Summary))
                             {
                                 <p class="card-text text-muted">
@@ -105,15 +100,14 @@
                             }
 
 
-                            <!-- AUTHOR -->
+                            @if (post.Author != null)
+                            {
+                                <div class="mt-auto pt-3">
 
-                            <div class="mt-auto pt-3">
-
-                                @if (post.Author != null)
-                                {
-                                    <div class="small text-muted">
+                                    <small class="text-muted">
 
                                         Tác giả:
+
                                         <a asp-area="User"
                                            asp-controller="Blog"
                                            asp-action="Author"
@@ -124,23 +118,10 @@
 
                                         </a>
 
-                                    </div>
-                                }
+                                    </small>
 
-
-                                <!-- DATE -->
-
-                                @if (post.PublishedAt.HasValue)
-                                {
-                                    <div class="small text-muted mt-1">
-
-                                        @post.PublishedAt.Value.ToString(
-                                            "dd/MM/yyyy HH:mm")
-
-                                    </div>
-                                }
-
-                            </div>
+                                </div>
+                            }
 
                         </div>
 

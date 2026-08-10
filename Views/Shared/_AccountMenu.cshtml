@@ -1,10 +1,46 @@
-@*
-    Menu tài khoản trên navbar — Issue #3
-    ⚠️ KHU A (Người 1) SỞ HỮU FILE NÀY. Khu B không sửa.
-    Được gọi từ Views/Shared/_Layout.cshtml
-*@
+@using BlogPlatform.Helpers
+@{
+    var userId = Context.Session.GetInt32(SessionKeys.UserId);
+    var displayName = Context.Session.GetString(SessionKeys.DisplayName);
+    var roleName = (Context.Session.GetString(SessionKeys.RoleName) ?? string.Empty).Trim();
+    var isLoggedIn = userId.HasValue;
+    var isAuthorOrAdmin = !string.IsNullOrWhiteSpace(roleName) &&
+        (roleName.Contains("Author", StringComparison.OrdinalIgnoreCase) ||
+         roleName.Contains("Admin", StringComparison.OrdinalIgnoreCase));
+}
 
-@* TODO: đọc Session để biết đã đăng nhập chưa *@
-@* Chưa đăng nhập  → nút "Đăng nhập" và "Đăng ký" *@
-@* Đã đăng nhập    → tên hiển thị + menu xổ xuống (Hồ sơ, Bài đã lưu, Đăng xuất) *@
-@* Role Author/Admin → thêm link vào khu quản lý tương ứng *@
+<div class="account-menu">
+    @if (isLoggedIn)
+    {
+        @if (isAuthorOrAdmin)
+        {
+            <a asp-area="Author" asp-controller="Post" asp-action="Create" class="btn btn-sm btn-primary">
+                + Viết bài mới
+            </a>
+            <a asp-area="Author" asp-controller="Post" asp-action="Index" class="btn btn-sm btn-secondary">
+                Quản lý bài viết
+            </a>
+            <a asp-area="Author" asp-controller="Analytics" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                Thống kê
+            </a>
+        }
+
+        <div class="user-chip">
+            <span class="user-name">@(!string.IsNullOrWhiteSpace(displayName) ? displayName : "Tài khoản")</span>
+
+            <form asp-area="User" asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Đăng xuất</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <a asp-area="User" asp-controller="Account" asp-action="Login" class="btn btn-sm btn-outline-secondary">
+            Đăng nhập
+        </a>
+        <a asp-area="User" asp-controller="Account" asp-action="Register" class="btn btn-sm btn-primary">
+            Đăng ký
+        </a>
+    }
+</div>

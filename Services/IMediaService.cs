@@ -1,9 +1,11 @@
-using BlogPlatform.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace BlogPlatform.Services
 {
-    // Upload ảnh/media: kiểm tra định dạng, giới hạn dung lượng, đổi tên file thành GUID
     public interface IMediaService
     {
+        Task<string> UploadAsync(
+            IFormFile file,
+            int uploadedById);
     }
 }

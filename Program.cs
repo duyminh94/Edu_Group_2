@@ -74,9 +74,17 @@ app.UseSession();
 
 app.MapStaticAssets();
 
-// 7. Route cho URL thân thiện dạng slug (theo thiết kế trong blog-platform-erd.md)
-//    CẦN NẮM: route khớp theo ĐÚNG THỨ TỰ khai báo. Bốn route này phải đứng trước
-//    route "default" ở mục 9, vì "default" bắt gần như mọi đường dẫn 2 đoạn.
+// 7. Route cho các Area (Admin, Author, User)
+//    PHẢI đặt TRƯỚC route public /author/{username} vì /Author/Post nếu rơi vào
+//    author-profile sẽ bị hiểu là username = "Post" và dẫn tới BlogController.Author,
+//    trả về 404 khi username không tồn tại.
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
+
+// 8. Route cho URL thân thiện dạng slug (theo thiết kế trong blog-platform-erd.md)
+//    Các route này đặt sau route area để không xung đột với /Author/Post,
+//    /Author/Post/Create, /Author/Post/Edit/{id}.
 app.MapControllerRoute(
     name: "post-detail",
     pattern: "post/{slug}",
@@ -96,11 +104,6 @@ app.MapControllerRoute(
     name: "tag",
     pattern: "tag/{slug}",
     defaults: new { area = "User", controller = "Blog", action = "Tag" });
-
-// 8. Route cho các Area (Admin, Author, User)
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
 
 // 9. Route mặc định — trang chủ "/" là danh sách bài viết trong Area User
 app.MapControllerRoute(

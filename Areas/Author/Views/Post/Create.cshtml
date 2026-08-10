@@ -4,124 +4,170 @@
     ViewData["Title"] = "Viết bài mới";
 }
 
-<div class="container mt-4">
+<div class="container py-4">
 
-    <div class="mb-4">
-        <h2>Viết bài mới</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Viết bài mới</h2>
+            <p class="text-muted mb-0">
+                Tạo bài viết mới của bạn
+            </p>
+        </div>
+
+        <a asp-area="Author"
+           asp-controller="Post"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            ← Quay lại
+        </a>
     </div>
 
-    <form asp-area="Author"
-          asp-controller="Post"
-          asp-action="Create"
-          method="post">
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-        @Html.AntiForgeryToken()
+            <form asp-area="Author"
+                  asp-controller="Post"
+                  asp-action="Create"
+                  method="post"
+                  enctype="multipart/form-data">
 
-        <div asp-validation-summary="ModelOnly"
-             class="text-danger mb-3">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="alert alert-danger">
+                </div>
+
+                <!-- TIÊU ĐỀ -->
+                <div class="mb-3">
+                    <label asp-for="Title"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <input asp-for="Title"
+                           class="form-control"
+                           placeholder="Nhập tiêu đề bài viết..." />
+
+                    <span asp-validation-for="Title"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- TÓM TẮT -->
+                <div class="mb-3">
+                    <label asp-for="Summary"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <textarea asp-for="Summary"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Nhập phần tóm tắt bài viết...">
+                    </textarea>
+
+                    <span asp-validation-for="Summary"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- NỘI DUNG -->
+                <div class="mb-3">
+                    <label asp-for="Content"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <textarea asp-for="Content"
+                              class="form-control"
+                              rows="12"
+                              placeholder="Nhập nội dung bài viết...">
+                    </textarea>
+
+                    <span asp-validation-for="Content"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- CATEGORY -->
+                <div class="mb-3">
+                    <label asp-for="CategoryId"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <select asp-for="CategoryId"
+                            asp-items="Model.Categories"
+                            class="form-select">
+
+                        <option value="">
+                            -- Chọn chuyên mục --
+                        </option>
+
+                    </select>
+
+                    <span asp-validation-for="CategoryId"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- TAG -->
+                <div class="mb-3">
+                    <label asp-for="TagNames"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <input asp-for="TagNames"
+                           class="form-control"
+                           placeholder="Ví dụ: C#, ASP.NET, Web Development" />
+
+                    <div class="form-text">
+                        Nhập nhiều thẻ, ngăn cách bằng dấu phẩy.
+                    </div>
+
+                    <span asp-validation-for="TagNames"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- ẢNH -->
+                <div class="mb-4">
+                    <label asp-for="ImageFile"
+                           class="form-label fw-semibold">
+                    </label>
+
+                    <input asp-for="ImageFile"
+                           type="file"
+                           class="form-control"
+                           accept="image/*" />
+
+                    <div class="form-text">
+                        Chọn ảnh đại diện cho bài viết.
+                    </div>
+
+                    <span asp-validation-for="ImageFile"
+                          class="text-danger">
+                    </span>
+                </div>
+
+                <!-- BUTTON -->
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Tạo bài viết
+                    </button>
+
+                    <a asp-area="Author"
+                       asp-controller="Post"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Hủy
+                    </a>
+
+                </div>
+
+            </form>
+
         </div>
+    </div>
 
-        <div class="mb-3">
-            <label asp-for="Title" class="form-label"></label>
-
-            <input asp-for="Title"
-                   class="form-control"
-                   placeholder="Nhập tiêu đề bài viết..." />
-
-            <span asp-validation-for="Title"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="Summary" class="form-label"></label>
-
-            <textarea asp-for="Summary"
-                      class="form-control"
-                      rows="3"
-                      placeholder="Nhập tóm tắt bài viết..."></textarea>
-
-            <span asp-validation-for="Summary"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="Content" class="form-label"></label>
-
-            <textarea asp-for="Content"
-                      class="form-control"
-                      rows="12"
-                      placeholder="Nhập nội dung bài viết..."></textarea>
-
-            <span asp-validation-for="Content"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="FeaturedImageUrl"
-                   class="form-label"></label>
-
-            <input asp-for="FeaturedImageUrl"
-                   class="form-control"
-                   placeholder="https://..." />
-
-            <span asp-validation-for="FeaturedImageUrl"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="CategoryId"
-                   class="form-label"></label>
-
-            <select asp-for="CategoryId"
-                    asp-items="Model.Categories"
-                    class="form-select">
-
-                <option value="">-- Chọn chuyên mục --</option>
-
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="TagNames"
-                   class="form-label"></label>
-
-            <input asp-for="TagNames"
-                   class="form-control"
-                   placeholder="aspnet, csharp, ef-core" />
-
-            <div class="form-text">
-                Nhập các thẻ, cách nhau bằng dấu phẩy.
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <strong>Trạng thái:</strong>
-            <span class="badge bg-secondary">
-                Bản nháp
-            </span>
-        </div>
-
-        <div class="d-flex gap-2">
-
-            <button type="submit"
-                    class="btn btn-primary">
-                Tạo bài viết
-            </button>
-
-            <a asp-area="Author"
-               asp-controller="Post"
-               asp-action="Index"
-               class="btn btn-secondary">
-                Hủy
-            </a>
-
-        </div>
-
-    </form>
 </div>
 
 @section Scripts {

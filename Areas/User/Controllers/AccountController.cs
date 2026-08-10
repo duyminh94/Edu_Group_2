@@ -47,7 +47,7 @@ namespace BlogPlatform.Areas.User.Controllers
             HttpContext.Session.SetInt32(SessionKeys.UserId, user.Id);
             HttpContext.Session.SetString(SessionKeys.UserName, user.UserName);
             HttpContext.Session.SetString(SessionKeys.DisplayName, user.DisplayName);
-            HttpContext.Session.SetString(SessionKeys.RoleName, user.Role.Name);
+            HttpContext.Session.SetString(SessionKeys.RoleName, user.Role?.Name ?? string.Empty);
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
             {
                 return Redirect(model.ReturnUrl);

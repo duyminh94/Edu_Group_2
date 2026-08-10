@@ -1,18 +1,179 @@
-@model PostDetailViewModel
+@model BlogPlatform.Models.Post
+
 @{
-    ViewData["Title"] = "Chi tiết bài viết";
+    ViewData["Title"] = Model.Title;
 }
-@*
-    KHU B (Người 2) sở hữu file này — Issue #4
-    File này chỉ dựng khung. Phần tương tác nằm trong partial do Khu D sở hữu,
-    Khu B KHÔNG viết nội dung vào 2 partial đó, và Khu D KHÔNG sửa file này.
-*@
 
-@* TODO (Khu B): tiêu đề, tác giả, ngày đăng, chuyên mục, thẻ *@
-@* TODO (Khu B): nội dung bài — dùng @@Html.Raw(Model.SanitizedContent) *@
+<div class="container py-4">
 
-@await Html.PartialAsync("_LikeBar", Model)
+    <!-- ============================= -->
+    <!-- QUAY LẠI -->
+    <!-- ============================= -->
 
-@await Html.PartialAsync("_CommentTree", Model)
+    <div class="mb-4">
 
-@* TODO (Khu B): danh sách bài viết liên quan *@
+        <a asp-area="User"
+           asp-controller="Blog"
+           asp-action="Index"
+           class="text-decoration-none">
+
+            ← Quay lại trang chủ
+
+        </a>
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- CATEGORY -->
+    <!-- ============================= -->
+
+    @if (Model.Category != null)
+    {
+        <div class="mb-3">
+
+            <a asp-area="User"
+               asp-controller="Blog"
+               asp-action="Category"
+               asp-route-slug="@Model.Category.Slug"
+               class="badge bg-primary text-decoration-none">
+
+                @Model.Category.Name
+
+            </a>
+
+        </div>
+    }
+
+
+    <!-- ============================= -->
+    <!-- TIÊU ĐỀ -->
+    <!-- ============================= -->
+
+    <h1 class="fw-bold mb-3">
+
+        @Model.Title
+
+    </h1>
+
+
+    <!-- ============================= -->
+    <!-- THÔNG TIN TÁC GIẢ -->
+    <!-- ============================= -->
+
+    <div class="text-muted mb-4">
+
+        @if (Model.Author != null)
+        {
+            <span>
+
+                Tác giả:
+
+                <a asp-area="User"
+                   asp-controller="Blog"
+                   asp-action="Author"
+                   asp-route-username="@Model.Author.UserName"
+                   class="text-decoration-none">
+
+                    @Model.Author.DisplayName
+
+                </a>
+
+            </span>
+        }
+
+        @if (Model.PublishedAt.HasValue)
+        {
+            <span class="ms-2">
+
+                •
+                @Model.PublishedAt.Value.ToString(
+                    "dd/MM/yyyy HH:mm")
+
+            </span>
+        }
+
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- ẢNH ĐẠI DIỆN -->
+    <!-- ============================= -->
+
+    @if (!string.IsNullOrWhiteSpace(Model.FeaturedImageUrl))
+    {
+        <div class="mb-4 text-center">
+
+            <img src="@Model.FeaturedImageUrl"
+                 alt="@Model.Title"
+                 class="img-fluid rounded shadow-sm"
+                 style="
+                    max-height:500px;
+                    width:100%;
+                    object-fit:cover;
+                 " />
+
+        </div>
+    }
+
+
+    <!-- ============================= -->
+    <!-- TÓM TẮT -->
+    <!-- ============================= -->
+
+    @if (!string.IsNullOrWhiteSpace(Model.Summary))
+    {
+        <div class="mb-4">
+
+            <p class="lead">
+
+                @Model.Summary
+
+            </p>
+
+        </div>
+    }
+
+
+    <!-- ============================= -->
+    <!-- NỘI DUNG -->
+    <!-- ============================= -->
+
+    <article class="mb-5">
+
+        @Html.Raw(Model.Content)
+
+    </article>
+
+
+    <!-- ============================= -->
+    <!-- TAG -->
+    <!-- ============================= -->
+
+    @if (Model.PostTags != null &&
+         Model.PostTags.Any())
+    {
+        <div class="border-top pt-3">
+
+            <strong>Thẻ:</strong>
+
+            @foreach (var postTag in Model.PostTags)
+            {
+                @if (postTag.Tag != null)
+                {
+                    <a asp-area="User"
+                       asp-controller="Blog"
+                       asp-action="Tag"
+                       asp-route-slug="@postTag.Tag.Slug"
+                       class="badge bg-secondary text-decoration-none ms-1">
+
+                        #@postTag.Tag.Name
+
+                    </a>
+                }
+            }
+
+        </div>
+    }
+
+</div>

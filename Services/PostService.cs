@@ -34,17 +34,18 @@ private readonly IHtmlSanitizerService _htmlSanitizerService;
         // =========================================================
         // Lấy danh sách bài viết của tác giả
         // =========================================================
-        public async Task<List<Post>> GetByAuthorAsync(int authorId)
-        {
-            return await _context.Posts
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.PostTags)
-                    .ThenInclude(pt => pt.Tag)
-                .Where(p => p.AuthorId == authorId)
-                .OrderByDescending(p => p.UpdatedAt)
-                .ToListAsync();
-        }
+    public async Task<List<Post>> GetByAuthorAsync(int authorId)
+{
+    return await _context.Posts
+        .AsNoTracking()
+        .Include(p => p.Category)
+        .Include(p => p.PostTags)
+            .ThenInclude(pt => pt.Tag)
+        .Include(p => p.MediaFiles)
+        .Where(p => p.AuthorId == authorId)
+        .OrderByDescending(p => p.UpdatedAt)
+        .ToListAsync();
+}
 
         // =========================================================
         // Lấy bài viết theo Id
