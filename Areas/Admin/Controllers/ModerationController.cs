@@ -17,6 +17,12 @@ namespace BlogPlatform.Areas.Admin.Controllers
             _context = context;
         }
 
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return RedirectToAction(nameof(Posts));
+        }
+
         // Danh sách bài viết toàn hệ thống để kiểm duyệt
         [HttpGet]
         public async Task<IActionResult> Posts()

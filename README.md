@@ -62,7 +62,7 @@ Nội dung — chọn 1 trong 2 mẫu tuỳ cách SQL Server của bạn đăng 
 }
 ```
 
-> Cài SQL Server dạng named instance thì đổi `localhost` thành `localhost\SQLEXPRESS`.
+> Cài SQL Server dạng named instance thì đổi `localhost` thành `localhost\ `.
 
 ### Bước 3 — Tạo 12 bảng + dữ liệu mẫu
 

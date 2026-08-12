@@ -1,5 +1,77 @@
+@model BlogPlatform.Models.User
+
 @{
     ViewData["Title"] = "Hồ sơ cá nhân";
 }
 
-@* TODO: xem và sửa hồ sơ (UC09) *@
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h4 class="card-title fw-bold mb-0"><i class="bi bi-person-gear me-2"></i>Hồ sơ cá nhân</h4>
+                </div>
+                <div class="card-body p-4">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                            <i class="bi bi-check-circle me-1"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-area="User" asp-controller="Account" asp-action="Profile" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="text-center mb-4">
+                            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                            {
+                                <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-2" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #dee2e6;" />
+                            }
+                            else
+                            {
+                                <div class="rounded-circle mx-auto mb-2 bg-light text-secondary d-flex align-items-center justify-content-center fw-bold fs-1" style="width: 100px; height: 100px; border: 3px solid #dee2e6;">
+                                    @Model.DisplayName.FirstOrDefault()
+                                </div>
+                            }
+                            <h5 class="fw-bold mb-0">@Model.DisplayName</h5>
+                            <span class="badge bg-secondary">@Model.Role?.Name</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Tên đăng nhập (Username)</label>
+                            <input type="text" class="form-control bg-light" value="@Model.UserName" disabled />
+                            <div class="form-text">Tên đăng nhập không thể thay đổi.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">Email</label>
+                            <input type="email" class="form-control bg-light" value="@Model.Email" disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="displayName" class="form-label fw-bold">Tên hiển thị <span class="text-danger">*</span></label>
+                            <input type="text" id="displayName" name="displayName" class="form-control" value="@Model.DisplayName" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="avatarUrl" class="form-label fw-bold">Đường dẫn ảnh đại diện (Avatar URL)</label>
+                            <input type="url" id="avatarUrl" name="avatarUrl" class="form-control" value="@Model.AvatarUrl" placeholder="https://example.com/avatar.jpg" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="bio" class="form-label fw-bold">Tiểu sử (Bio)</label>
+                            <textarea id="bio" name="bio" class="form-control" rows="4" placeholder="Giới thiệu bản thân...">@Model.Bio</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a asp-area="User" asp-controller="Blog" asp-action="Index" class="btn btn-outline-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Lưu thay đổi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

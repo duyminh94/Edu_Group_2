@@ -1,4 +1,5 @@
 using BlogPlatform.Data;
+using BlogPlatform.Models;
 using BlogPlatform.Models.Enums;
 using BlogPlatform.Services;
 using BlogPlatform.ViewModel;
@@ -9,12 +10,13 @@ namespace BlogPlatform.Areas.User.Controllers
 {
     // UC01–UC06 — xem danh sách bài, chi tiết bài, tìm kiếm, lọc, trang cá nhân tác giả
     // Index là trang chủ của website (route mặc định)
+    // TODO: thêm action Error() trả về view Shared/Error.cshtml — UseExceptionHandler đang trỏ tới /User/Blog/Error
     [Area("User")]
-    private readonly ISearchService _searchService;
     public class BlogController : Controller
     {
         private readonly BlogDbContext _context;
         private readonly IAnalyticsService _analyticsService;
+        private readonly ISearchService _searchService;
 
         public BlogController(BlogDbContext context, IAnalyticsService analyticsService, ISearchService searchService)
         {
@@ -22,6 +24,8 @@ namespace BlogPlatform.Areas.User.Controllers
             _analyticsService = analyticsService;
             _searchService = searchService;
         }
+
+        // ===== UC03, UC04: Tìm kiếm & Lọc bài viết (Issue #10) =====
         [HttpGet]
         public async Task<IActionResult> Search([FromQuery] SearchViewModel model)
         {
@@ -185,64 +189,6 @@ namespace BlogPlatform.Areas.User.Controllers
             return View("Index", viewModel);
         }
 
-        // ===== UC05: Tìm kiếm bài viết =====
-        public async Task<IActionResult> Search(string? q, int page = 1)
-        {
-            int pageSize = 10;
-            var query = _context.Posts
-                .AsNoTracking()
-                .Where(p => p.Status == PostStatus.Published);
-
-            if (!string.IsNullOrWhiteSpace(q))
-            {
-                string keyword = q.Trim();
-                query = query.Where(p => p.Title.Contains(keyword) || (p.Summary != null && p.Summary.Contains(keyword)));
-            }
-
-            int totalPosts = await query.CountAsync();
-
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PostListItemViewModel
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Summary = p.Summary,
-                    FeaturedImageUrl = p.FeaturedImageUrl,
-                    AuthorId = p.AuthorId,
-                    AuthorUserName = p.Author!.UserName,
-                    AuthorDisplayName = p.Author.DisplayName,
-                    CategoryName = p.Category != null ? p.Category.Name : null,
-                    CategorySlug = p.Category != null ? p.Category.Slug : null,
-                    Status = p.Status,
-                    PublishedAt = p.PublishedAt,
-                    ViewCount = p.ViewCount,
-                    LikeCount = p.LikeCount,
-                    CommentCount = p.CommentCount
-                })
-                .ToListAsync();
-
-            var searchViewModel = new SearchViewModel
-            {
-                Query = q ?? string.Empty,
-                Results = new PostListViewModel
-                {
-                    Posts = posts,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalPosts = totalPosts,
-                    PageTitle = string.IsNullOrWhiteSpace(q) ? "Tìm kiếm bài viết" : $"Kết quả tìm kiếm cho: \"{q}\"",
-                    Categories = await _context.Categories.AsNoTracking().ToListAsync(),
-                    Tags = await _context.Tags.AsNoTracking().ToListAsync()
-                }
-            };
-
-            return View(searchViewModel);
-        }
-
         // ===== UC02: Xem chi tiết bài viết =====
         public async Task<IActionResult> Detail(string slug)
         {
@@ -269,33 +215,11 @@ namespace BlogPlatform.Areas.User.Controllers
                 ViewBag.BlogTagline = post.Author.BlogSetting.Tagline;
             }
 
-            // Ghi nhận lượt xem qua Analytics Service
-            await _analyticsService.RecordViewAsync(post.Id, HttpContext);
-
             var viewModel = new PostDetailViewModel
             {
-                Id = post.Id,
-                Title = post.Title,
-                Slug = post.Slug,
-                Content = post.Content,
-                Summary = post.Summary,
-                FeaturedImageUrl = post.FeaturedImageUrl,
-                PublishedAt = post.PublishedAt,
-                AuthorId = post.AuthorId,
-                AuthorDisplayName = post.Author!.DisplayName,
-                AuthorUserName = post.Author.UserName,
-                AuthorAvatarUrl = post.Author.AvatarUrl,
-                AuthorBio = post.Author.Bio,
-                CategoryName = post.Category?.Name,
-                CategorySlug = post.Category?.Slug,
-                Tags = post.PostTags.Select(pt => new TagViewModel
-                {
-                    Name = pt.Tag.Name,
-                    Slug = pt.Tag.Slug
-                }).ToList(),
-                ViewCount = post.ViewCount,
-                LikeCount = post.LikeCount,
-                CommentCount = post.CommentCount
+                Post = post,
+                SanitizedContent = post.Content,
+                Tags = post.PostTags.Where(pt => pt.Tag != null).Select(pt => pt.Tag!).ToList()
             };
 
             return View(viewModel);
@@ -354,25 +278,18 @@ namespace BlogPlatform.Areas.User.Controllers
 
             var viewModel = new AuthorProfileViewModel
             {
-                AuthorId = author.Id,
-                UserName = author.UserName,
-                DisplayName = author.DisplayName,
-                AvatarUrl = author.AvatarUrl,
-                Bio = author.Bio,
-                Posts = new PostListViewModel
-                {
-                    Posts = posts,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalPosts = totalPosts,
-                    PageTitle = $"Bài viết của {author.DisplayName}"
-                }
+                Author = author,
+                Setting = author.BlogSetting ?? new BlogSetting(),
+                Posts = posts,
+                Page = page,
+                PageSize = pageSize,
+                TotalPosts = totalPosts
             };
 
             return View("~/Areas/User/Views/Profile/Author.cshtml", viewModel);
         }
 
-        // ===== Xử lý lỗi theo chỉ định trong TODO =====
+        // ===== Action Error =====
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error(int? code)
         {

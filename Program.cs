@@ -108,4 +108,12 @@ app.MapControllerRoute(
     pattern: "{controller=Blog}/{action=Index}/{id?}",
     defaults: new { area = "User" });
 
+// Tự động seed dữ liệu mẫu khi khởi chạy nếu DB chưa có dữ liệu
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<BlogDbContext>();
+    await DbSeeder.SeedAsync(dbContext);
+}
+
 app.Run();
+

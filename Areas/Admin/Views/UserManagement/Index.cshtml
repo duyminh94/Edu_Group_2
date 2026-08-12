@@ -1,5 +1,145 @@
+@model IEnumerable<BlogPlatform.Models.User>
+
 @{
-    ViewData["Title"] = "Quản lý người dùng";
+    ViewData["Title"] = "Quản lý Người dùng";
 }
 
-@* TODO: danh sách user, gán role, khoá tài khoản (UC25) *@
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Quản lý Người dùng</h2>
+            <p class="text-muted mb-0">Quản lý phân quyền, khoá và mở khoá tài khoản trong hệ thống</p>
+        </div>
+        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Bảng điều khiển
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Người dùng</th>
+                            <th>Email</th>
+                            <th class="text-center">Vai trò hiện tại</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Đổi vai trò</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-muted">#@user.Id</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (!string.IsNullOrEmpty(user.AvatarUrl))
+                                            {
+                                                <img src="@user.AvatarUrl" alt="@user.DisplayName" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover;" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-circle bg-light text-secondary d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+                                                    @user.DisplayName.FirstOrDefault()
+                                                </div>
+                                            }
+                                            <div>
+                                                <div class="fw-bold">@user.DisplayName</div>
+                                                <div class="text-muted small">@@@user.UserName</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>@user.Email</td>
+                                    <td class="text-center">
+                                        @if (user.Role?.Name == "Admin")
+                                        {
+                                            <span class="badge bg-danger">Admin</span>
+                                        }
+                                        else if (user.Role?.Name == "Author")
+                                        {
+                                            <span class="badge bg-primary">Author</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Reader</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (user.IsLocked)
+                                        {
+                                            <span class="badge bg-danger"><i class="bi bi-lock-fill me-1"></i>Đã khóa</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Hoạt động</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <form asp-area="Admin" asp-controller="UserManagement" asp-action="ChangeRole" method="post" class="d-inline-flex align-items-center gap-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            <select name="newRoleId" class="form-select form-select-sm" style="width: 110px;">
+                                                <option value="1" selected="@(user.RoleId == 1)">Admin</option>
+                                                <option value="2" selected="@(user.RoleId == 2)">Author</option>
+                                                <option value="3" selected="@(user.RoleId == 3)">Reader</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Lưu vai trò mới">
+                                                <i class="bi bi-save"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="text-end">
+                                        <form asp-area="Admin" asp-controller="UserManagement" asp-action="ToggleLock" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@user.Id" />
+                                            @if (user.IsLocked)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-success" title="Mở khóa tài khoản">
+                                                    <i class="bi bi-unlock me-1"></i>Mở khóa
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Khóa tài khoản">
+                                                    <i class="bi bi-lock me-1"></i>Khóa
+                                                </button>
+                                            }
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Không có người dùng nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

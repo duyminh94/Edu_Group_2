@@ -21,7 +21,6 @@ namespace BlogPlatform.Services
                 .AsNoTracking()
                 .Where(p => p.Status == PostStatus.Published);
 
-            // Kiểm tra xem người dùng đã tương tác tìm kiếm/lọc hay chưa
             bool isSearching = !string.IsNullOrWhiteSpace(model.Keyword)
                 || !string.IsNullOrEmpty(model.CategorySlug)
                 || !string.IsNullOrEmpty(model.TagSlug)
@@ -29,32 +28,27 @@ namespace BlogPlatform.Services
 
             model.HasSearched = isSearching;
 
-            // Quy tắc 6.9: Tìm theo Keyword trong Title và Summary (chỉ tìm khi >= 2 ký tự)
             if (!string.IsNullOrWhiteSpace(model.Keyword) && model.Keyword.Trim().Length >= 2)
             {
                 string kw = model.Keyword.Trim();
                 query = query.Where(p => p.Title.Contains(kw) || (p.Summary != null && p.Summary.Contains(kw)));
             }
 
-            // Lọc theo Chuyên mục
             if (!string.IsNullOrEmpty(model.CategorySlug))
             {
                 query = query.Where(p => p.Category != null && p.Category.Slug == model.CategorySlug);
             }
 
-            // Lọc theo Thẻ
             if (!string.IsNullOrEmpty(model.TagSlug))
             {
                 query = query.Where(p => p.PostTags.Any(pt => pt.Tag.Slug == model.TagSlug));
             }
 
-            // Lọc theo Tác giả
             if (!string.IsNullOrEmpty(model.AuthorUserName))
             {
                 query = query.Where(p => p.Author != null && p.Author.UserName == model.AuthorUserName);
             }
 
-            // Quy tắc 6.5: Sắp xếp kết quả ("newest" / "views" / "likes")
             query = model.SortBy?.ToLower() switch
             {
                 "views" => query.OrderByDescending(p => p.ViewCount),
@@ -64,7 +58,6 @@ namespace BlogPlatform.Services
 
             model.TotalCount = await query.CountAsync();
 
-            // Projection sang PostListItemViewModel — Tuyệt đối KHÔNG lấy cột Content
             model.Results = await query
                 .Skip((model.Page - 1) * model.PageSize)
                 .Take(model.PageSize)
@@ -88,7 +81,6 @@ namespace BlogPlatform.Services
                 })
                 .ToListAsync();
 
-            // Đổ danh sách cho Dropdown/Tags ở View
             var categories = await _context.Categories.AsNoTracking().ToListAsync();
             model.CategoryOptions = new SelectList(categories, "Slug", "Name", model.CategorySlug);
             model.AvailableTags = await _context.Tags.AsNoTracking().ToListAsync();

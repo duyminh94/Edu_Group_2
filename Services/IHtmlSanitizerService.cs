@@ -4,5 +4,7 @@ namespace BlogPlatform.Services
     public interface IHtmlSanitizerService
     {
         string Sanitize(string html);
+        string SanitizePostContent(string html);
+        string SanitizeCommentContent(string html);
     }
 }

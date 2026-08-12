@@ -1,0 +1,121 @@
+@model IEnumerable<BlogPlatform.Models.Comment>
+
+@{
+    ViewData["Title"] = "Kiểm duyệt Bình luận";
+}
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-shield-x text-danger me-2"></i>Kiểm duyệt Nội dung</h2>
+            <p class="text-muted mb-0">Quản lý và gỡ bỏ các bài viết/bình luận vi phạm tiêu chuẩn</p>
+        </div>
+        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Bảng điều khiển
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-check-circle me-1"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="Admin" asp-controller="Moderation" asp-action="Posts">
+                <i class="bi bi-journal-x me-1"></i>Bài viết
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active fw-bold" asp-area="Admin" asp-controller="Moderation" asp-action="Comments">
+                <i class="bi bi-chat-left-x me-1"></i>Bình luận (@(Model?.Count() ?? 0))
+            </a>
+        </li>
+    </ul>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Người gửi</th>
+                            <th>Nội dung bình luận</th>
+                            <th>Bài viết liên quan</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Thời gian</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var cmt in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">@(cmt.User?.DisplayName ?? "Khách")</div>
+                                        <div class="text-muted small">@@@(cmt.User?.UserName ?? "guest")</div>
+                                    </td>
+                                    <td style="max-width: 300px;">
+                                        <div class="text-break small">@cmt.Content</div>
+                                    </td>
+                                    <td>
+                                        @if (cmt.Post != null)
+                                        {
+                                            <a asp-area="User" asp-controller="Blog" asp-action="Detail" asp-route-slug="@cmt.Post.Slug" target="_blank" class="text-decoration-none text-truncate d-block" style="max-width: 200px;">
+                                                @cmt.Post.Title
+                                            </a>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (cmt.Status == BlogPlatform.Models.Enums.CommentStatus.Approved)
+                                        {
+                                            <span class="badge bg-success">Approved</span>
+                                        }
+                                        else if (cmt.Status == BlogPlatform.Models.Enums.CommentStatus.Pending)
+                                        {
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Rejected</span>
+                                        }
+                                    </td>
+                                    <td class="text-center text-muted small">@cmt.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="text-end">
+                                        <form asp-area="Admin" asp-controller="Moderation" asp-action="DeleteComment" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn gỡ bình luận này?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@cmt.Id" />
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Gỡ bình luận">
+                                                <i class="bi bi-trash me-1"></i>Gỡ
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Không có bình luận nào.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

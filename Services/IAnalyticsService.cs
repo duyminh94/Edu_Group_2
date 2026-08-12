@@ -1,4 +1,3 @@
-using BlogPlatform.Models;
 using BlogPlatform.ViewModel;
 
 namespace BlogPlatform.Services
@@ -7,6 +6,7 @@ namespace BlogPlatform.Services
     public interface IAnalyticsService
     {
         Task<AnalyticsViewModel> GetSystemWideAsync();
-
+        Task<AnalyticsViewModel> GetByAuthorAsync(int authorId);
+        Task RecordViewAsync(int postId, string? ipAddress, int? userId);
     }
 }

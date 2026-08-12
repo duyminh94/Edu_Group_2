@@ -1,5 +1,147 @@
+@model PostListViewModel
 @{
-    ViewData["Title"] = "Bài viết";
+    ViewData["Title"] = string.IsNullOrEmpty(Model.PageTitle) ? "Trang chủ" : Model.PageTitle;
+
+    // Helper hàm tạo URL phân trang
+    string GetPageUrl(int p)
+    {
+        if (!string.IsNullOrEmpty(Model.CategorySlug))
+            return $"/category/{Model.CategorySlug}?page={p}";
+        if (!string.IsNullOrEmpty(Model.TagSlug))
+            return $"/tag/{Model.TagSlug}?page={p}";
+        return $"/?page={p}";
+    }
 }
 
-@* TODO: danh sách bài viết đã publish (UC01) *@
+<div class="page-hero">
+    <h1><i class="fa-solid fa-compass"></i> @(string.IsNullOrEmpty(Model.PageTitle) ? "Khám Phá Tri Thức" : Model.PageTitle)</h1>
+    <p>Nơi tổng hợp các bài viết góc nhìn chuyên sâu, kinh nghiệm thực tế và xu hướng công nghệ mới nhất.</p>
+</div>
+
+<div class="layout-grid">
+    <!-- Cột trái: Danh sách bài viết -->
+    <div class="main-content">
+        @if (Model.Posts == null || !Model.Posts.Any())
+        {
+            <div class="widget" style="text-align: center; padding: 3rem 1.5rem;">
+                <i class="fa-solid fa-newspaper" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3 style="color: var(--text-main); font-weight: 700;">Chưa có bài viết nào</h3>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">Hiện chưa có bài viết nào được xuất bản trong mục này.</p>
+            </div>
+        }
+        else
+        {
+            <div class="posts-list">
+                @foreach (var post in Model.Posts)
+                {
+                    <article class="post-card">
+                        <div class="post-card-thumb">
+                            <a href="/post/@post.Slug">
+                                @if (!string.IsNullOrEmpty(post.FeaturedImageUrl))
+                                {
+                                    <img src="@post.FeaturedImageUrl" alt="@post.Title" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <img src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=600&q=80" alt="@post.Title" loading="lazy" />
+                                }
+                            </a>
+                        </div>
+                        <div class="post-card-body">
+                            <div>
+                                <div class="post-meta-top">
+                                    @if (!string.IsNullOrEmpty(post.CategoryName))
+                                    {
+                                        <a href="/category/@post.CategorySlug" class="badge-category">@post.CategoryName</a>
+                                    }
+                                    <span class="post-date">
+                                        <i class="fa-regular fa-calendar-days"></i>
+                                        @(post.PublishedAt?.ToString("dd/MM/yyyy") ?? "Mới đây")
+                                    </span>
+                                </div>
+
+                                <h2 class="post-title">
+                                    <a href="/post/@post.Slug">@post.Title</a>
+                                </h2>
+
+                                @if (!string.IsNullOrEmpty(post.Summary))
+                                {
+                                    <p class="post-summary">@post.Summary</p>
+                                }
+                            </div>
+
+                            <div class="post-footer">
+                                <a href="/author/@post.AuthorUserName" class="post-author">
+                                    <i class="fa-solid fa-circle-user" style="color: var(--primary);"></i>
+                                    <span>@(string.IsNullOrEmpty(post.AuthorDisplayName) ? post.AuthorUserName : post.AuthorDisplayName)</span>
+                                </a>
+
+                                <div class="post-metrics">
+                                    <span title="Lượt xem"><i class="fa-regular fa-eye"></i> @post.ViewCount</span>
+                                    <span title="Lượt thích"><i class="fa-regular fa-heart"></i> @post.LikeCount</span>
+                                    <span title="Bình luận"><i class="fa-regular fa-comment"></i> @post.CommentCount</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+
+            <!-- Phân trang -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="pagination-container">
+                    <a href="@GetPageUrl(Model.Page - 1)" class="page-link-btn @(Model.HasPreviousPage ? "" : "disabled")">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </a>
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <a href="@GetPageUrl(i)" class="page-link-btn @(i == Model.Page ? "active" : "")">@i</a>
+                    }
+
+                    <a href="@GetPageUrl(Model.Page + 1)" class="page-link-btn @(Model.HasNextPage ? "" : "disabled")">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Cột phải: Sidebar -->
+    <aside class="sidebar">
+        <!-- Widget Chuyên mục -->
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            <div class="widget">
+                <h3 class="widget-title"><i class="fa-solid fa-folder-open"></i> Chuyên mục</h3>
+                <ul class="category-list">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <li class="category-item">
+                            <a href="/category/@cat.Slug">
+                                <span>@cat.Name</span>
+                                <i class="fa-solid fa-angle-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <!-- Widget Thẻ -->
+        @if (Model.Tags != null && Model.Tags.Any())
+        {
+            <div class="widget">
+                <h3 class="widget-title"><i class="fa-solid fa-tags"></i> Thẻ nổi bật</h3>
+                <div class="tag-cloud">
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <a href="/tag/@tag.Slug" class="tag-item">#@tag.Name</a>
+                    }
+                </div>
+            </div>
+        }
+    </aside>
+</div>
+

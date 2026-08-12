@@ -1,5 +1,7 @@
 @{
-    ViewData["Title"] = "Nội dung vi phạm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-@* TODO: gỡ bài viết và bình luận vi phạm (UC27) *@
+<script>
+    window.location.href = '@Url.Action("Posts", "Moderation", new { area = "Admin" })';
+</script>

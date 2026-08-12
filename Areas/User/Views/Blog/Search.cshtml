@@ -98,7 +98,7 @@
                     @for (int i = 1; i <= Model.TotalPages; i++)
                     {
                         <li class="page-item @(i == Model.Page ? "active" : "")">
-                            <a class="page-page-link btn btn-outline-primary mx-1 @(i == Model.Page ? "active" : "")"
+                            <a class="page-link btn btn-outline-primary mx-1 @(i == Model.Page ? "active" : "")"
                                asp-area="User" asp-controller="Blog" asp-action="Search"
                                asp-route-Keyword="@Model.Keyword"
                                asp-route-CategorySlug="@Model.CategorySlug"

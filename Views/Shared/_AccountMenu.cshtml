@@ -1,10 +1,41 @@
-@*
-    Menu tài khoản trên navbar — Issue #3
-    ⚠️ KHU A (Người 1) SỞ HỮU FILE NÀY. Khu B không sửa.
-    Được gọi từ Views/Shared/_Layout.cshtml
-*@
+@using BlogPlatform.Helpers
+@using Microsoft.AspNetCore.Http
+@{
+    var userId = Context.Session.GetInt32(SessionKeys.UserId);
+    var displayName = Context.Session.GetString(SessionKeys.DisplayName) ?? Context.Session.GetString(SessionKeys.UserName);
+    var roleName = Context.Session.GetString(SessionKeys.RoleName);
+}
 
-@* TODO: đọc Session để biết đã đăng nhập chưa *@
-@* Chưa đăng nhập  → nút "Đăng nhập" và "Đăng ký" *@
-@* Đã đăng nhập    → tên hiển thị + menu xổ xuống (Hồ sơ, Bài đã lưu, Đăng xuất) *@
-@* Role Author/Admin → thêm link vào khu quản lý tương ứng *@
+@if (userId.HasValue)
+{
+    <div class="user-menu-dropdown">
+        <button class="btn btn-user-menu" type="button">
+            <i class="fa-solid fa-circle-user"></i>
+            <span>@displayName</span>
+            <i class="fa-solid fa-chevron-down" style="font-size: 0.75rem;"></i>
+        </button>
+        <div class="dropdown-menu-custom">
+            <a href="/User/Account/Profile" class="dropdown-item"><i class="fa-solid fa-address-card"></i> Hồ sơ cá nhân</a>
+            <a href="/User/Interaction/Bookmarks" class="dropdown-item"><i class="fa-solid fa-bookmark"></i> Bài đã lưu</a>
+            @if (roleName == "Author" || roleName == "Admin")
+            {
+                <div class="dropdown-divider"></div>
+                <a href="/Author/Post/Index" class="dropdown-item"><i class="fa-solid fa-pen-to-square"></i> Quản lý bài viết</a>
+            }
+            @if (roleName == "Admin")
+            {
+                <a href="/Admin/Dashboard" class="dropdown-item"><i class="fa-solid fa-user-gear"></i> Quản trị hệ thống</a>
+            }
+            <div class="dropdown-divider"></div>
+            <a href="/User/Account/Logout" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="auth-buttons">
+        <a href="/User/Account/Login" class="btn btn-outline-primary"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
+        <a href="/User/Account/Register" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Đăng ký</a>
+    </div>
+}
+

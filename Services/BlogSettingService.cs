@@ -48,7 +48,6 @@ namespace BlogPlatform.Services
 
         public async Task<bool> SaveSettingAsync(int userId, BlogSettingViewModel model)
         {
-            // Kiểm tra bảo mật phía Server (Quy tắc 5.4 & 5.5)
             if (!IsValidHexColor(model.PrimaryColor)) return false;
             if (!AllowedFonts.Contains(model.FontFamily)) return false;
 
