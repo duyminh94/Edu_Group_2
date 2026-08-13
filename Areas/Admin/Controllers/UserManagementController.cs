@@ -27,15 +27,15 @@ namespace BlogPlatform.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeRole(int userId, int newRoleId)
         {
-             var currentAdminId = HttpContext.Session.GetInt32(SessionKeys.UserId);
-            if(currentAdminId == null)
+            var currentAdminId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            if (currentAdminId == null)
             {
                 return RedirectToAction("Login", "Account", new { area = "Admin" });
             }
             var result = await _accountService.ChangeRoleAsync(userId, newRoleId, currentAdminId.Value);
-            if (result == "Success" || result == "SUCCESS")
+            if (result.Contains("Successfully") || result == "Success" || result == "SUCCESS")
             {
-                TempData["SuccessMessage"] = "Role changed successfully.";
+                TempData["SuccessMessage"] = "Đổi vai trò người dùng thành công!";
             }
             else
             {
@@ -53,9 +53,9 @@ namespace BlogPlatform.Areas.Admin.Controllers
                 return RedirectToAction("Login", "Account", new { area = "Admin" });
             }
             var result = await _accountService.ToggleLockAsync(userId, currentAdminId.Value);
-            if (result.StartsWith("User Account") || result == "SUCCESS" || result.Contains("unlocked") || result.Contains("locked"))
+            if (result.Contains("locked") || result.Contains("unlocked") || result.StartsWith("User Account") || result == "SUCCESS")
             {
-                TempData["SuccessMessage"] = "User lock status changed successfully.";
+                TempData["SuccessMessage"] = result.Contains("unlocked") ? "Đã mở khóa tài khoản thành công!" : "Đã khóa tài khoản thành công!";
             }
             else
             {

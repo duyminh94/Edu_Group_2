@@ -1,154 +1,199 @@
 @model List<BlogPlatform.Models.Post>
 
 @{
-    ViewData["Title"] = "Bài viết của tôi";
+    ViewData["Title"] = "Quản lý bài viết";
+    var totalPosts = Model?.Count ?? 0;
+    var publishedCount = Model?.Count(p => p.Status == BlogPlatform.Models.Enums.PostStatus.Published) ?? 0;
+    var draftCount = Model?.Count(p => p.Status == BlogPlatform.Models.Enums.PostStatus.Draft) ?? 0;
+    var unpublishedCount = Model?.Count(p => p.Status == BlogPlatform.Models.Enums.PostStatus.Unpublished) ?? 0;
 }
 
-<div class="mb-3">
-    <a asp-area="Author"
-       asp-controller="Post"
-       asp-action="Create"
-       class="btn btn-primary">
-        + Viết bài mới
-    </a>
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fa-solid fa-file-lines me-2 text-primary"></i>Quản lý bài viết</h2>
+            <p class="text-muted mb-0">Danh sách tất cả các bài viết do bạn sáng tạo và quản lý</p>
+        </div>
+        <a asp-area="Author" asp-controller="Post" asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i>Viết bài mới
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stat Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 bg-white rounded-3">
+                <div class="text-muted small fw-bold">Tổng bài viết</div>
+                <div class="fs-3 fw-extrabold text-dark">@totalPosts</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 bg-white rounded-3">
+                <div class="text-success small fw-bold">Đã xuất bản</div>
+                <div class="fs-3 fw-extrabold text-success">@publishedCount</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 bg-white rounded-3">
+                <div class="text-secondary small fw-bold">Bản nháp</div>
+                <div class="fs-3 fw-extrabold text-secondary">@draftCount</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm p-3 bg-white rounded-3">
+                <div class="text-warning small fw-bold">Đã gỡ bài</div>
+                <div class="fs-3 fw-extrabold text-warning">@unpublishedCount</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-list me-2"></i>Danh sách bài viết</h5>
+        </div>
+        <div class="card-body p-0">
+            @if (Model == null || !Model.Any())
+            {
+                <div class="p-5 text-center text-muted">
+                    <i class="fa-regular fa-newspaper fs-1 mb-3 d-block opacity-50"></i>
+                    <h5 class="fw-bold">Bạn chưa có bài viết nào</h5>
+                    <p class="mb-3">Hãy tạo bài viết đầu tiên để chia sẻ thông tin bổ ích với mọi người.</p>
+                    <a asp-area="Author" asp-controller="Post" asp-action="Create" class="btn btn-primary">
+                        <i class="fa-solid fa-plus me-1"></i>Viết bài mới ngay
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width: 250px;">Tiêu đề</th>
+                                <th>Chuyên mục</th>
+                                <th>Trạng thái</th>
+                                <th>Cập nhật</th>
+                                <th class="text-end" style="min-width: 220px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var post in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <a href="/post/@post.Slug" class="fw-bold text-decoration-none text-dark d-block mb-1">
+                                            @post.Title
+                                        </a>
+                                        @if (!string.IsNullOrWhiteSpace(post.Summary))
+                                        {
+                                            <div class="text-muted small text-truncate" style="max-width: 400px;">
+                                                @post.Summary
+                                            </div>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @(post.Category?.Name ?? "Chưa phân loại")
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @switch (post.Status)
+                                        {
+                                            case BlogPlatform.Models.Enums.PostStatus.Draft:
+                                                <span class="badge bg-secondary">
+                                                    <i class="fa-solid fa-pen-ruler me-1"></i>Bản nháp
+                                                </span>
+                                                break;
+
+                                            case BlogPlatform.Models.Enums.PostStatus.Published:
+                                                <span class="badge bg-success">
+                                                    <i class="fa-solid fa-check me-1"></i>Đã đăng
+                                                </span>
+                                                break;
+
+                                            case BlogPlatform.Models.Enums.PostStatus.Unpublished:
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fa-solid fa-eye-slash me-1"></i>Đã gỡ
+                                                </span>
+                                                break;
+                                        }
+                                    </td>
+
+                                    <td class="text-muted small">
+                                        @post.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a asp-area="Author"
+                                               asp-controller="Post"
+                                               asp-action="Edit"
+                                               asp-route-id="@post.Id"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Sửa bài viết">
+                                                <i class="fa-solid fa-pen"></i> Sửa
+                                            </a>
+
+                                            @if (post.Status != BlogPlatform.Models.Enums.PostStatus.Published)
+                                            {
+                                                <form asp-area="Author"
+                                                      asp-controller="Post"
+                                                      asp-action="Publish"
+                                                      asp-route-id="@post.Id"
+                                                      method="post"
+                                                      class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Đăng bài">
+                                                        <i class="fa-solid fa-paper-plane"></i> Đăng
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form asp-area="Author"
+                                                      asp-controller="Post"
+                                                      asp-action="Unpublish"
+                                                      asp-route-id="@post.Id"
+                                                      method="post"
+                                                      class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Gỡ bài">
+                                                        <i class="fa-solid fa-arrow-down"></i> Gỡ
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            <form asp-area="Author"
+                                                  asp-controller="Post"
+                                                  asp-action="Delete"
+                                                  asp-route-id="@post.Id"
+                                                  method="post"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa bài viết">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 </div>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success">
-        @TempData["SuccessMessage"]
-    </div>
-}
-
-@if (Model == null || !Model.Any())
-{
-    <div class="alert alert-info">
-        Bạn chưa có bài viết nào.
-    </div>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>Tiêu đề</th>
-                    <th>Chuyên mục</th>
-                    <th>Trạng thái</th>
-                    <th>Cập nhật</th>
-                    <th style="width: 300px;">Thao tác</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                @foreach (var post in Model)
-                {
-                    <tr>
-                        <td>
-                            <strong>@post.Title</strong>
-
-                            @if (!string.IsNullOrWhiteSpace(post.Summary))
-                            {
-                                <div class="text-muted small">
-                                    @post.Summary
-                                </div>
-                            }
-                        </td>
-
-                        <td>
-                            @(post.Category?.Name ?? "Chưa phân loại")
-                        </td>
-
-                        <td>
-                            @switch (post.Status)
-                            {
-                                case BlogPlatform.Models.Enums.PostStatus.Draft:
-                                    <span class="badge bg-secondary">
-                                        Bản nháp
-                                    </span>
-                                    break;
-
-                                case BlogPlatform.Models.Enums.PostStatus.Published:
-                                    <span class="badge bg-success">
-                                        Đã đăng
-                                    </span>
-                                    break;
-
-                                case BlogPlatform.Models.Enums.PostStatus.Unpublished:
-                                    <span class="badge bg-warning text-dark">
-                                        Đã gỡ
-                                    </span>
-                                    break;
-                            }
-                        </td>
-
-                        <td>
-                            @post.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
-                        </td>
-
-                        <td>
-                            <a asp-area="Author"
-                               asp-controller="Post"
-                               asp-action="Edit"
-                               asp-route-id="@post.Id"
-                               class="btn btn-sm btn-primary">
-                                Sửa
-                            </a>
-
-                            @if (post.Status != BlogPlatform.Models.Enums.PostStatus.Published)
-                            {
-                                <form asp-area="Author"
-                                      asp-controller="Post"
-                                      asp-action="Publish"
-                                      asp-route-id="@post.Id"
-                                      method="post"
-                                      class="d-inline">
-
-                                    @Html.AntiForgeryToken()
-
-                                    <button type="submit"
-                                            class="btn btn-sm btn-success">
-                                        Đăng bài
-                                    </button>
-                                </form>
-                            }
-                            else
-                            {
-                                <form asp-area="Author"
-                                      asp-controller="Post"
-                                      asp-action="Unpublish"
-                                      asp-route-id="@post.Id"
-                                      method="post"
-                                      class="d-inline">
-
-                                    @Html.AntiForgeryToken()
-
-                                    <button type="submit"
-                                            class="btn btn-sm btn-warning">
-                                        Gỡ bài
-                                    </button>
-                                </form>
-                            }
-
-                            <form asp-area="Author"
-                                  asp-controller="Post"
-                                  asp-action="Delete"
-                                  asp-route-id="@post.Id"
-                                  method="post"
-                                  class="d-inline"
-                                  onsubmit="return confirm('Bạn có chắc muốn xóa bài viết này?');">
-
-                                @Html.AntiForgeryToken()
-
-                                <button type="submit"
-                                        class="btn btn-sm btn-danger">
-                                    Xóa
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}

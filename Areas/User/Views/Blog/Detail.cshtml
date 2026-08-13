@@ -1,18 +1,135 @@
 @model PostDetailViewModel
 @{
-    ViewData["Title"] = "Chi tiết bài viết";
+    ViewData["Title"] = Model.Post?.Title ?? "Chi tiết bài viết";
 }
-@*
-    KHU B (Người 2) sở hữu file này — Issue #4
-    File này chỉ dựng khung. Phần tương tác nằm trong partial do Khu D sở hữu,
-    Khu B KHÔNG viết nội dung vào 2 partial đó, và Khu D KHÔNG sửa file này.
-*@
 
-@* TODO (Khu B): tiêu đề, tác giả, ngày đăng, chuyên mục, thẻ *@
-@* TODO (Khu B): nội dung bài — dùng @@Html.Raw(Model.SanitizedContent) *@
+<article class="post-detail-container">
+    <!-- Header bài viết -->
+    <header class="post-detail-header mb-4">
+        @if (Model.Post?.Category != null)
+        {
+            <div class="mb-2">
+                <a href="/category/@Model.Post.Category.Slug" class="badge-category">@Model.Post.Category.Name</a>
+            </div>
+        }
+        <h1 class="post-detail-title fw-extrabold mb-3">@Model.Post?.Title</h1>
 
-@await Html.PartialAsync("_LikeBar", Model)
+        <div class="post-detail-meta d-flex align-items-center justify-content-between flex-wrap gap-3 py-2 border-bottom">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/author/@Model.Post?.Author?.UserName" class="d-flex align-items-center gap-2 text-decoration-none text-dark fw-bold">
+                    @if (!string.IsNullOrEmpty(Model.Post?.Author?.AvatarUrl))
+                    {
+                        <img src="@Model.Post.Author.AvatarUrl" alt="Avatar" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 42px; height: 42px; background-color: var(--primary-light, #eef2ff); color: var(--primary, #4f46e5);">
+                            @(Model.Post?.Author?.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? "A")
+                        </div>
+                    }
+                    <div>
+                        <div>@(Model.Post?.Author?.DisplayName ?? Model.Post?.Author?.UserName)</div>
+                        <div class="text-muted fw-normal small">@(Model.Post?.PublishedAt?.ToString("dd/MM/yyyy") ?? "Mới đây")</div>
+                    </div>
+                </a>
+            </div>
 
-@await Html.PartialAsync("_CommentTree", Model)
+            <div class="d-flex align-items-center gap-3 text-muted small">
+                <span><i class="fa-regular fa-eye me-1"></i>@(Model.Post?.ViewCount ?? 0) lượt xem</span>
+                <span><i class="fa-regular fa-heart me-1"></i>@(Model.Post?.LikeCount ?? 0) lượt thích</span>
+                <span><i class="fa-regular fa-comment me-1"></i>@(Model.Comments?.Count ?? 0) bình luận</span>
+            </div>
+        </div>
+    </header>
 
-@* TODO (Khu B): danh sách bài viết liên quan *@
+    <!-- Ảnh nổi bật -->
+    @if (!string.IsNullOrEmpty(Model.Post?.FeaturedImageUrl))
+    {
+        <div class="post-detail-featured-img mb-4 text-center">
+            <img src="@Model.Post.FeaturedImageUrl" alt="@Model.Post.Title" class="img-fluid rounded-4 shadow-sm" style="max-height: 500px; width: 100%; object-fit: cover;" />
+        </div>
+    }
+
+    <!-- Nội dung bài viết -->
+    <div class="post-detail-content mb-5">
+        @Html.Raw(Model.SanitizedContent)
+    </div>
+
+    <!-- Danh sách Thẻ (Tags) -->
+    @if (Model.Tags != null && Model.Tags.Any())
+    {
+        <div class="post-detail-tags mb-4">
+            <h6 class="fw-bold mb-2"><i class="fa-solid fa-tags me-1"></i>Thẻ bài viết:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var tag in Model.Tags)
+                {
+                    <a href="/tag/@tag.Slug" class="tag-item">#@tag.Name</a>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Thanh Tương Tác Like / Bookmark / Share -->
+    @await Html.PartialAsync("_LikeBar", Model)
+
+    <!-- Tác giả Card -->
+    @if (Model.Post?.Author != null)
+    {
+        <div class="author-card p-4 bg-light rounded-4 border mb-5 d-flex gap-3 align-items-center">
+            @if (!string.IsNullOrEmpty(Model.Post.Author.AvatarUrl))
+            {
+                <img src="@Model.Post.Author.AvatarUrl" alt="Avatar" class="rounded-circle shadow-sm" style="width: 70px; height: 70px; object-fit: cover;" />
+            }
+            else
+            {
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-2" style="width: 70px; height: 70px;">
+                    @(Model.Post.Author.DisplayName?.FirstOrDefault().ToString().ToUpper() ?? "A")
+                </div>
+            }
+            <div>
+                <h6 class="fw-bold mb-1">
+                    <a href="/author/@Model.Post.Author.UserName" class="text-decoration-none text-dark">
+                        @(Model.Post.Author.DisplayName ?? Model.Post.Author.UserName)
+                    </a>
+                </h6>
+                <p class="text-muted small mb-0">@(string.IsNullOrEmpty(Model.Post.Author.Bio) ? "Tác giả chia sẻ các bài viết góc nhìn chuyên sâu và kiến thức bổ ích." : Model.Post.Author.Bio)</p>
+            </div>
+        </div>
+    }
+
+    <!-- Bài viết liên quan -->
+    @if (Model.RelatedPosts != null && Model.RelatedPosts.Any())
+    {
+        <div class="related-posts mb-5">
+            <h4 class="fw-bold mb-3"><i class="fa-solid fa-layer-group me-2"></i>Bài viết liên quan</h4>
+            <div class="row g-3">
+                @foreach (var related in Model.RelatedPosts)
+                {
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden">
+                            @if (!string.IsNullOrEmpty(related.FeaturedImageUrl))
+                            {
+                                <img src="@related.FeaturedImageUrl" alt="@related.Title" class="card-img-top" style="height: 160px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 160px;">
+                                    <i class="fa-solid fa-newspaper fs-2"></i>
+                                </div>
+                            }
+                            <div class="card-body p-3">
+                                <h6 class="card-title fw-bold">
+                                    <a href="/post/@related.Slug" class="text-decoration-none text-dark">@related.Title</a>
+                                </h6>
+                                <p class="card-text text-muted small text-truncate">@related.Summary</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Bình luận -->
+    @await Html.PartialAsync("_CommentTree", Model)
+</article>

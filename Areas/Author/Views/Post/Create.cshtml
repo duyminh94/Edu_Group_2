@@ -4,126 +4,122 @@
     ViewData["Title"] = "Viết bài mới";
 }
 
-<div class="container mt-4">
-
-    <div class="mb-4">
-        <h2>Viết bài mới</h2>
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fa-solid fa-pen-nib me-2 text-primary"></i>Viết bài mới</h2>
+            <p class="text-muted mb-0">Soạn thảo và chia sẻ bài viết mới của bạn tới cộng đồng</p>
+        </div>
+        <a asp-area="Author" asp-controller="Post" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i>Quay lại danh sách
+        </a>
     </div>
 
-    <form asp-area="Author"
-          asp-controller="Post"
-          asp-action="Create"
-          method="post">
-
+    <form asp-area="Author" asp-controller="Post" asp-action="Create" method="post">
         @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
 
-        <div asp-validation-summary="ModelOnly"
-             class="text-danger mb-3">
-        </div>
+        <div class="row g-4">
+            <!-- Cột trái: Tiêu đề & Nội dung -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-bold">Tiêu đề bài viết <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control form-control-lg" placeholder="Nhập tiêu đề hấp dẫn cho bài viết..." required />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
 
-        <div class="mb-3">
-            <label asp-for="Title" class="form-label"></label>
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label fw-bold">Tóm tắt ngắn (Summary)</label>
+                        <textarea asp-for="Summary" class="form-control" rows="3" placeholder="Tóm tắt ngắn gọn nội dung chính của bài viết..."></textarea>
+                        <span asp-validation-for="Summary" class="text-danger small"></span>
+                    </div>
 
-            <input asp-for="Title"
-                   class="form-control"
-                   placeholder="Nhập tiêu đề bài viết..." />
+                    <div class="mb-0">
+                        <label asp-for="Content" class="form-label fw-bold">Nội dung chi tiết <span class="text-danger">*</span></label>
+                        <textarea asp-for="Content" class="form-control" rows="15" placeholder="Soạn thảo nội dung bài viết bằng HTML hoặc văn bản..." required></textarea>
+                        <span asp-validation-for="Content" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
 
-            <span asp-validation-for="Title"
-                  class="text-danger">
-            </span>
-        </div>
+            <!-- Cột phải: Phân loại & Ảnh đại diện -->
+            <div class="col-lg-4">
+                <!-- Card Xuất bản -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>Đăng bài</h5>
+                    <div class="mb-3">
+                        <span class="text-muted small fw-bold d-block mb-1">Trạng thái tạo:</span>
+                        <span class="badge bg-secondary fs-6"><i class="fa-solid fa-pen-ruler me-1"></i>Bản nháp</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary fw-bold py-2">
+                            <i class="fa-solid fa-floppy-disk me-1"></i>Tạo bài viết
+                        </button>
+                        <a asp-area="Author" asp-controller="Post" asp-action="Index" class="btn btn-outline-secondary">Hủy bỏ</a>
+                    </div>
+                </div>
 
-        <div class="mb-3">
-            <label asp-for="Summary" class="form-label"></label>
+                <!-- Card Chuyên mục & Thẻ -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-folder-open me-2 text-primary"></i>Phân loại</h5>
+                    
+                    <div class="mb-3">
+                        <label asp-for="CategoryId" class="form-label fw-bold">Chuyên mục</label>
+                        <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                            <option value="">-- Chọn chuyên mục --</option>
+                        </select>
+                    </div>
 
-            <textarea asp-for="Summary"
-                      class="form-control"
-                      rows="3"
-                      placeholder="Nhập tóm tắt bài viết..."></textarea>
+                    <div class="mb-0">
+                        <label asp-for="TagNames" class="form-label fw-bold">Thẻ bài viết (Tags)</label>
+                        <input asp-for="TagNames" class="form-control" placeholder="aspnet, csharp, efcore" />
+                        <div class="form-text">Nhập các thẻ bài viết, phân tách bằng dấu phẩy.</div>
+                    </div>
+                </div>
 
-            <span asp-validation-for="Summary"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="Content" class="form-label"></label>
-
-            <textarea asp-for="Content"
-                      class="form-control"
-                      rows="12"
-                      placeholder="Nhập nội dung bài viết..."></textarea>
-
-            <span asp-validation-for="Content"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="FeaturedImageUrl"
-                   class="form-label"></label>
-
-            <input asp-for="FeaturedImageUrl"
-                   class="form-control"
-                   placeholder="https://..." />
-
-            <span asp-validation-for="FeaturedImageUrl"
-                  class="text-danger">
-            </span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="CategoryId"
-                   class="form-label"></label>
-
-            <select asp-for="CategoryId"
-                    asp-items="Model.Categories"
-                    class="form-select">
-
-                <option value="">-- Chọn chuyên mục --</option>
-
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="TagNames"
-                   class="form-label"></label>
-
-            <input asp-for="TagNames"
-                   class="form-control"
-                   placeholder="aspnet, csharp, ef-core" />
-
-            <div class="form-text">
-                Nhập các thẻ, cách nhau bằng dấu phẩy.
+                <!-- Card Ảnh đại diện bài viết -->
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-image me-2 text-primary"></i>Ảnh bìa (Featured Image)</h5>
+                    <div class="mb-3">
+                        <label asp-for="FeaturedImageUrl" class="form-label small text-muted">Đường dẫn URL ảnh bìa:</label>
+                        <input asp-for="FeaturedImageUrl" id="imgUrlInput" class="form-control" placeholder="https://images.unsplash.com/..." />
+                        <span asp-validation-for="FeaturedImageUrl" class="text-danger small"></span>
+                    </div>
+                    <div class="text-center bg-light p-2 rounded-3 border">
+                        <img id="imgPreview" src="" alt="Preview" class="img-fluid rounded d-none" style="max-height: 180px; object-fit: cover;" />
+                        <div id="imgPlaceholder" class="text-muted small py-3">
+                            <i class="fa-regular fa-image fs-1 d-block mb-1"></i>
+                            Xem trước ảnh bìa ở đây
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="mb-3">
-            <strong>Trạng thái:</strong>
-            <span class="badge bg-secondary">
-                Bản nháp
-            </span>
-        </div>
-
-        <div class="d-flex gap-2">
-
-            <button type="submit"
-                    class="btn btn-primary">
-                Tạo bài viết
-            </button>
-
-            <a asp-area="Author"
-               asp-controller="Post"
-               asp-action="Index"
-               class="btn btn-secondary">
-                Hủy
-            </a>
-
-        </div>
-
     </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const imgInput = document.getElementById('imgUrlInput');
+            const imgPreview = document.getElementById('imgPreview');
+            const imgPlaceholder = document.getElementById('imgPlaceholder');
+
+            if (imgInput) {
+                imgInput.addEventListener('input', function () {
+                    const url = imgInput.value.trim();
+                    if (url) {
+                        imgPreview.src = url;
+                        imgPreview.classList.remove('d-none');
+                        imgPlaceholder.classList.add('d-none');
+                    } else {
+                        imgPreview.classList.add('d-none');
+                        imgPlaceholder.classList.remove('d-none');
+                    }
+                });
+            }
+        });
+    </script>
 }

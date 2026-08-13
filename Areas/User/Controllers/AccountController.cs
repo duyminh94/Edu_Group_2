@@ -12,10 +12,12 @@ namespace BlogPlatform.Areas.User.Controllers
     public class AccountController : Controller
     {
         private readonly IAccountService _accountService;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public AccountController(IAccountService accountService)
+        public AccountController(IAccountService accountService, IWebHostEnvironment webHostEnvironment)
         {
             this._accountService = accountService;
+            this._webHostEnvironment = webHostEnvironment;
         }
 
         // Login 
@@ -110,7 +112,7 @@ namespace BlogPlatform.Areas.User.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [SessionAuthorize]
-        public async Task<IActionResult> Profile(string displayName, string? bio, string? avatarUrl)
+        public async Task<IActionResult> Profile(string displayName, string? bio, string? avatarUrl, IFormFile? avatarFile)
         {
             var userId = HttpContext.Session.GetInt32(SessionKeys.UserId);
             if (userId == null)
@@ -122,8 +124,45 @@ namespace BlogPlatform.Areas.User.Controllers
                 ModelState.AddModelError(string.Empty, "Display name is required.");
                 var currentUser = await _accountService.GetByIdAsync(userId.Value);
                 return View(currentUser);
-
             }
+
+            // Xử lý file ảnh tải lên nếu có
+            if (avatarFile != null && avatarFile.Length > 0)
+            {
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg" };
+                var ext = Path.GetExtension(avatarFile.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(ext))
+                {
+                    ModelState.AddModelError(string.Empty, "Chỉ chấp nhận các file ảnh có định dạng .jpg, .jpeg, .png, .gif, .webp, .svg.");
+                    var currentUser = await _accountService.GetByIdAsync(userId.Value);
+                    return View(currentUser);
+                }
+
+                if (avatarFile.Length > 5 * 1024 * 1024) // Giới hạn 5MB
+                {
+                    ModelState.AddModelError(string.Empty, "Dung lượng file ảnh không được vượt quá 5MB.");
+                    var currentUser = await _accountService.GetByIdAsync(userId.Value);
+                    return View(currentUser);
+                }
+
+                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads", "avatars");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var uniqueFileName = $"{userId.Value}_{Guid.NewGuid():N}{ext}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await avatarFile.CopyToAsync(stream);
+                }
+
+                avatarUrl = $"/uploads/avatars/{uniqueFileName}";
+            }
+
             var result = await _accountService.UpdateProfileAsync(userId.Value, displayName, bio, avatarUrl);
             if (result != "Profile updated successfully.")
             {
@@ -131,6 +170,10 @@ namespace BlogPlatform.Areas.User.Controllers
                 var currentUser = await _accountService.GetByIdAsync(userId.Value);
                 return View(currentUser);
             }
+
+            // Cập nhật lại Session DisplayName để hiển thị ngay trên Navbar
+            HttpContext.Session.SetString(SessionKeys.DisplayName, displayName.Trim());
+
             TempData["SuccessMessage"] = "Profile updated successfully.";
             var updatedUser = await _accountService.GetByIdAsync(userId.Value);
             return View(updatedUser);
