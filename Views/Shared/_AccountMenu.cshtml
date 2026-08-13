@@ -8,6 +8,10 @@
 
 @if (userId.HasValue)
 {
+    <form id="logout-form" action="/User/Account/Logout" method="post" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+
     <div class="user-menu-dropdown">
         <button class="btn btn-user-menu" type="button" aria-expanded="false" aria-haspopup="true">
             <i class="fa-solid fa-circle-user"></i>
@@ -27,7 +31,7 @@
                 <a href="/Admin/Dashboard" class="dropdown-item"><i class="fa-solid fa-user-gear"></i> Quản trị hệ thống</a>
             }
             <div class="dropdown-divider"></div>
-            <a href="/User/Account/Logout" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+            <a href="/User/Account/Logout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="dropdown-item text-danger"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
         </div>
     </div>
 }

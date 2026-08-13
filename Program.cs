@@ -51,11 +51,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/User/Blog/Error");
 }
 
-// TODO Khu B: bỏ comment dòng dưới SAU KHI viết xong action BlogController.Error.
-//       Dòng này bắt lỗi 403 (sai quyền) và 404 (sai đường dẫn) rồi render ra trang
-//       có layout, thay vì trang trắng của Kestrel. Bật sớm khi chưa có action Error
-//       sẽ làm lỗi 404 thành lỗi chồng lỗi.
-// app.UseStatusCodePagesWithReExecute("/User/Blog/Error", "?code={0}");
+// Bắt lỗi 403 (sai quyền) và 404 (sai đường dẫn) rồi render ra trang Error.cshtml
+app.UseStatusCodePagesWithReExecute("/User/Blog/Error", "?code={0}");
 
 // Phục vụ file tĩnh trong wwwroot.
 // CẦN NẮM: giữ UseStaticFiles chứ không bỏ đi chỉ dùng MapStaticAssets, vì ảnh người
@@ -74,9 +71,14 @@ app.UseSession();
 
 app.MapStaticAssets();
 
-// 7. Route cho URL thân thiện dạng slug (theo thiết kế trong blog-platform-erd.md)
-//    CẦN NẮM: route khớp theo ĐÚNG THỨ TỰ khai báo. Bốn route này phải đứng trước
-//    route "default" ở mục 9, vì "default" bắt gần như mọi đường dẫn 2 đoạn.
+// 7. Route cho các Area (Admin, Author, User)
+//    CẦN NẮM: {area:exists} đứng trước để các đường dẫn như /Author/Post khớp với Controller Post trong Area Author,
+//    thay vì bị route author/{username} nuốt nhầm làm username = "Post".
+app.MapControllerRoute(
+    name: "areas",
+    pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
+
+// 8. Route cho URL thân thiện dạng slug (theo thiết kế trong blog-platform-erd.md)
 app.MapControllerRoute(
     name: "post-detail",
     pattern: "post/{slug}",
@@ -96,11 +98,6 @@ app.MapControllerRoute(
     name: "tag",
     pattern: "tag/{slug}",
     defaults: new { area = "User", controller = "Blog", action = "Tag" });
-
-// 8. Route cho các Area (Admin, Author, User)
-app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller}/{action=Index}/{id?}");
 
 // 9. Route mặc định — trang chủ "/" là danh sách bài viết trong Area User
 app.MapControllerRoute(

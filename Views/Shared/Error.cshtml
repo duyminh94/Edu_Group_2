@@ -1,11 +1,35 @@
 @model ErrorViewModel
 @{
-    ViewData["Title"] = "Lỗi";
+    int statusCode = ViewBag.StatusCode ?? 500;
+    ViewData["Title"] = $"Lỗi {statusCode}";
 }
 
-<h1>Đã có lỗi xảy ra</h1>
+<div class="container text-center py-5 my-5">
+    <div class="card border-0 shadow-sm mx-auto p-4 p-md-5" style="max-width: 600px; border-radius: 1rem;">
+        @if (statusCode == 404)
+        {
+            <div class="display-1 text-warning fw-bold mb-2">404</div>
+            <h3 class="fw-bold mb-3">Không tìm thấy bài viết hoặc trang</h3>
+            <p class="text-muted mb-4">Bài viết với đường dẫn (slug) này không tồn tại trong hệ thống, chưa được xuất bản hoặc đã bị xóa.</p>
+        }
+        else
+        {
+            <div class="display-1 text-danger fw-bold mb-2">@statusCode</div>
+            <h3 class="fw-bold mb-3">Đã xảy ra lỗi hệ thống</h3>
+            <p class="text-muted mb-4">Rất tiếc, đã có sự cố phát sinh trong quá trình xử lý yêu cầu của bạn.</p>
+        }
 
-@if (Model.ShowRequestId)
-{
-    <p>Mã yêu cầu: <code>@Model.RequestId</code></p>
-}
+        @if (Model != null && Model.ShowRequestId)
+        {
+            <div class="bg-light rounded p-2 mb-4 small text-muted text-break">
+                Mã yêu cầu (Request ID): <code>@Model.RequestId</code>
+            </div>
+        }
+
+        <div>
+            <a href="/" class="btn btn-primary px-4 py-2 rounded-pill fw-bold">
+                <i class="fa-solid fa-house me-2"></i>Trở về trang chủ
+            </a>
+        </div>
+    </div>
+</div>

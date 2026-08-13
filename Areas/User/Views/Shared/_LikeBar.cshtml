@@ -97,8 +97,15 @@
                     body: formData,
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = "/User/Account/Login?returnUrl=" + encodeURIComponent(window.location.pathname);
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     if (data.isSuccess) {
                         const icon = document.getElementById("like-icon");
                         const countSpan = document.getElementById("like-count");
@@ -140,8 +147,15 @@
                     body: formData,
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = "/User/Account/Login?returnUrl=" + encodeURIComponent(window.location.pathname);
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     if (data.isSuccess) {
                         const icon = document.getElementById("bookmark-icon");
                         const textSpan = document.getElementById("bookmark-text");

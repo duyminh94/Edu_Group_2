@@ -31,6 +31,23 @@ namespace BlogPlatform.Filters
             context.HttpContext.Request.Path +
             context.HttpContext.Request.QueryString;
 
+        var isAjax = context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                     context.HttpContext.Request.Headers.Accept.ToString().Contains("application/json");
+
+        if (isAjax)
+        {
+            context.Result = new JsonResult(new
+            {
+                isSuccess = false,
+                message = "Vui lòng đăng nhập để thực hiện thao tác này.",
+                redirectUrl = "/User/Account/Login?returnUrl=" + Uri.EscapeDataString(returnUrl)
+            })
+            {
+                StatusCode = 401
+            };
+            return;
+        }
+
         context.Result = new RedirectToActionResult(
             "Login",
             "Account",

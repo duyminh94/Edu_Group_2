@@ -1,4 +1,5 @@
 using BlogPlatform.Data;
+using BlogPlatform.Helpers;
 using BlogPlatform.Models;
 using BlogPlatform.Models.Enums;
 using BlogPlatform.Services;
@@ -17,12 +18,21 @@ namespace BlogPlatform.Areas.User.Controllers
         private readonly BlogDbContext _context;
         private readonly IAnalyticsService _analyticsService;
         private readonly ISearchService _searchService;
+        private readonly IInteractionService _interactionService;
+        private readonly ICommentService _commentService;
 
-        public BlogController(BlogDbContext context, IAnalyticsService analyticsService, ISearchService searchService)
+        public BlogController(
+            BlogDbContext context,
+            IAnalyticsService analyticsService,
+            ISearchService searchService,
+            IInteractionService interactionService,
+            ICommentService commentService)
         {
             _context = context;
             _analyticsService = analyticsService;
             _searchService = searchService;
+            _interactionService = interactionService;
+            _commentService = commentService;
         }
 
         // ===== UC03, UC04: Tìm kiếm & Lọc bài viết (Issue #10) =====
@@ -201,9 +211,22 @@ namespace BlogPlatform.Areas.User.Controllers
                 .Include(p => p.Category)
                 .Include(p => p.PostTags)
                     .ThenInclude(pt => pt.Tag)
-                .FirstOrDefaultAsync(p => p.Slug == slug && p.Status == PostStatus.Published);
+                .FirstOrDefaultAsync(p => p.Slug == slug);
 
             if (post == null) return NotFound();
+
+            var currentUserId = HttpContext.Session.GetInt32(SessionKeys.UserId);
+            var currentRole = HttpContext.Session.GetString(SessionKeys.RoleName);
+
+            // Bài viết chưa ở trạng thái Published -> Chỉ cho phép Tác giả bài viết hoặc Quản trị viên (Admin) xem trước
+            if (post.Status != PostStatus.Published)
+            {
+                bool canPreview = currentUserId.HasValue && (post.AuthorId == currentUserId.Value || currentRole == "Admin");
+                if (!canPreview)
+                {
+                    return NotFound();
+                }
+            }
 
             // Đọc cấu hình giao diện blog của tác giả
             if (post.Author?.BlogSetting != null)
@@ -215,11 +238,32 @@ namespace BlogPlatform.Areas.User.Controllers
                 ViewBag.BlogTagline = post.Author.BlogSetting.Tagline;
             }
 
+            bool isLoggedIn = currentUserId.HasValue;
+            bool isLiked = false;
+            bool isBookmarked = false;
+            bool isAuthor = false;
+
+            if (currentUserId.HasValue)
+            {
+                int userId = currentUserId.Value;
+                isLiked = await _interactionService.IsLikedAsync(post.Id, userId);
+                isBookmarked = await _interactionService.IsBookmarkedAsync(post.Id, userId);
+                isAuthor = post.AuthorId == userId;
+            }
+
+            var comments = await _commentService.GetTreeByPostAsync(post.Id, currentUserId);
+
             var viewModel = new PostDetailViewModel
             {
                 Post = post,
                 SanitizedContent = post.Content,
-                Tags = post.PostTags.Where(pt => pt.Tag != null).Select(pt => pt.Tag!).ToList()
+                Tags = post.PostTags.Where(pt => pt.Tag != null).Select(pt => pt.Tag!).ToList(),
+                Comments = comments,
+                IsLoggedIn = isLoggedIn,
+                CurrentUserId = currentUserId,
+                IsLiked = isLiked,
+                IsBookmarked = isBookmarked,
+                IsAuthor = isAuthor
             };
 
             return View(viewModel);
@@ -294,7 +338,8 @@ namespace BlogPlatform.Areas.User.Controllers
         public IActionResult Error(int? code)
         {
             ViewBag.StatusCode = code ?? 500;
-            return View("~/Views/Shared/Error.cshtml");
+            var requestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            return View("~/Views/Shared/Error.cshtml", new ErrorViewModel { RequestId = requestId });
         }
     }
 }

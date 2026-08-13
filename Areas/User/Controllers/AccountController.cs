@@ -83,8 +83,8 @@ namespace BlogPlatform.Areas.User.Controllers
             TempData["SuccessMessage"] = "Registration successful. Please login.";
             return RedirectToAction("Login", "Account", new { area = "User" });
         }
+        [HttpGet]
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();

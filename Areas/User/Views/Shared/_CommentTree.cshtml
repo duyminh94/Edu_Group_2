@@ -6,6 +6,11 @@
     Được gọi từ Areas/User/Views/Blog/Detail.cshtml
 *@
 
+@{
+    ViewData["IsLoggedIn"] = Model.IsLoggedIn;
+    ViewData["PostId"] = Model.Post?.Id ?? 0;
+}
+
 <div id="comments-section" class="mt-5 pt-4 border-top">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <h3 class="h4 mb-0 font-weight-bold">
@@ -63,7 +68,7 @@
         {
             foreach (var comment in Model.Comments)
             {
-                @await Html.PartialAsync("_CommentItem", comment, new ViewDataDictionary(ViewData) { { "IsLoggedIn", Model.IsLoggedIn }, { "PostId", Model.Post?.Id ?? 0 } })
+                @await Html.PartialAsync("_CommentItem", comment, ViewData)
             }
         }
         else

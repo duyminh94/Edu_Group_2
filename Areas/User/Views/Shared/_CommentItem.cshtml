@@ -87,7 +87,7 @@
         <div class="replies-list mt-3">
             @foreach (var reply in Model.Replies)
             {
-                @await Html.PartialAsync("_CommentItem", reply, new ViewDataDictionary(ViewData) { { "IsLoggedIn", isLoggedIn }, { "PostId", postId } })
+                @await Html.PartialAsync("_CommentItem", reply, ViewData)
             }
         </div>
     }
